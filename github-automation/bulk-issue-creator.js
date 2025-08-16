@@ -22,8 +22,9 @@ const octokit = new Octokit({
   auth: CONFIG.token
 });
 
-// MVP Phase 1のタスクデータ
-const MVP_TASKS = [
+// 全フェーズのタスクデータ
+const ALL_TASKS = [
+  // === MVP Phase 1: 画像認識コア ===
   {
     title: '[MVP-001] 商品画像認識AI実装',
     body: `## 概要
