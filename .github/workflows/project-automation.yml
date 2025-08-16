@@ -1,0 +1,64 @@
+name: Project Automation
+
+on:
+  issues:
+    types: [opened, closed, labeled, unlabeled]
+  pull_request:
+    types: [opened, closed, merged, labeled, unlabeled]
+
+jobs:
+  track_issue:
+    runs-on: ubuntu-latest
+    name: Add to project & set fields
+    steps:
+      # Issues/PRをプロジェクトに追加
+      - name: Add to project
+        id: add-project
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/users/tomoki33/projects/1
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+
+      # MVP Critical Issues の処理
+      - name: Set MVP Critical Priority
+        if: contains(github.event.issue.labels.*.name, 'mvp:critical')
+        uses: titoportas/update-project-fields@v0.1.0
+        with:
+          project-url: https://github.com/users/tomoki33/projects/1
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          item-id: ${{ steps.add-project.outputs.itemId }}
+          field-keys: Priority,Status
+          field-values: 🔥 Critical,📋 Backlog
+
+      # MVP High Issues の処理  
+      - name: Set MVP High Priority
+        if: contains(github.event.issue.labels.*.name, 'mvp:high')
+        uses: titoportas/update-project-fields@v0.1.0
+        with:
+          project-url: https://github.com/users/tomoki33/projects/1
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          item-id: ${{ steps.add-project.outputs.itemId }}
+          field-keys: Priority,Status
+          field-values: ⚡ High,📋 Backlog
+
+      # AI Vision Features の処理
+      - name: Set AI Vision Epic
+        if: contains(github.event.issue.labels.*.name, 'feature:ai-vision')
+        uses: titoportas/update-project-fields@v0.1.0
+        with:
+          project-url: https://github.com/users/tomoki33/projects/1
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          item-id: ${{ steps.add-project.outputs.itemId }}
+          field-keys: Epic
+          field-values: 🤖 AI Vision
+
+      # Issue完了時の処理
+      - name: Move completed issues
+        if: github.event.action == 'closed' && github.event.issue
+        uses: titoportas/update-project-fields@v0.1.0
+        with:
+          project-url: https://github.com/users/tomoki33/projects/1
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          item-id: ${{ steps.add-project.outputs.itemId }}
+          field-keys: Status
+          field-values: ✅ Done

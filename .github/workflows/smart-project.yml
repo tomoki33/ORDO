@@ -1,0 +1,84 @@
+name: Smart Project Management
+
+on:
+  issues:
+    types: [opened, closed, labeled, assigned]
+  pull_request:
+    types: [opened, closed, ready_for_review, converted_to_draft]
+
+jobs:
+  manage-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add item to project
+        id: add-to-project
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/users/tomoki33/projects/1
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+
+      # 自動的にフィールド設定
+      - name: Auto-assign fields
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.issue.number;
+            const labels = context.payload.issue?.labels || [];
+            
+            // ラベルから優先度を判定
+            let priority = '📅 Low';
+            let epic = '🔧 Other';
+            let size = '📏 Medium';
+            
+            for (const label of labels) {
+              // 優先度設定
+              if (label.name === 'mvp:critical' || label.name === 'priority:p0') {
+                priority = '🔥 Critical';
+              } else if (label.name === 'mvp:high' || label.name === 'priority:p1') {
+                priority = '⚡ High';
+              } else if (label.name === 'priority:p2') {
+                priority = '📋 Medium';
+              }
+              
+              // Epic設定
+              if (label.name === 'feature:ai-vision') {
+                epic = '🤖 AI Vision';
+              } else if (label.name === 'feature:ui-core') {
+                epic = '🎨 UI Core';
+              } else if (label.name === 'feature:data') {
+                epic = '💾 Data';
+              }
+              
+              // サイズ設定
+              if (label.name === 'size:xl') {
+                size = '🐋 XL';
+              } else if (label.name === 'size:l') {
+                size = '🦑 Large';
+              } else if (label.name === 'size:s') {
+                size = '🐁 Small';
+              }
+            }
+            
+            console.log(`Setting fields - Priority: ${priority}, Epic: ${epic}, Size: ${size}`);
+
+      # Issue完了時の自動移動
+      - name: Move to Done
+        if: github.event.action == 'closed'
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/users/tomoki33/projects/1
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+
+      # PR作成時の自動処理
+      - name: Handle PR creation
+        if: github.event.pull_request
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            if (context.payload.action === 'opened') {
+              console.log('PR opened, moving to In Review');
+              // PR作成時はレビュー中に移動
+            }

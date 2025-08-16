@@ -1,0 +1,27 @@
+name: Auto Add to Project
+
+on:
+  issues:
+    types: [opened, reopened]
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  add-to-project:
+    name: Add issue/PR to project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add to project
+        uses: actions/add-to-project@v0.5.0
+        with:
+          # プロジェクトのURL (後で更新が必要)
+          project-url: https://github.com/users/tomoki33/projects/1
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          
+      - name: Set custom field values
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/users/tomoki33/projects/1
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: mvp:critical
+          label-operator: OR
