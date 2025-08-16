@@ -15,7 +15,7 @@ const { Octokit } = require('@octokit/rest');
 const CONFIG = {
   owner: 'tomoki33',  // あなたのGitHubユーザー名
   repo: 'ORDO',               // リポジトリ名
-  token: process.env.GITHUB_TOKEN || 'YOUR_GITHUB_TOKEN_HERE' // 環境変数から読み取り
+  token: process.env.GITHUB_TOKEN // 環境変数から読み取り
 };
 
 const octokit = new Octokit({
@@ -272,10 +272,10 @@ async function createMilestones() {
 
 // Issues を一括作成する関数
 async function createIssues() {
-  console.log(`🚀 ${MVP_TASKS.length}個のIssueを作成開始...`);
+  console.log(`🚀 ${ALL_TASKS.length}個のIssueを作成開始...`);
   
-  for (let i = 0; i < MVP_TASKS.length; i++) {
-    const task = MVP_TASKS[i];
+  for (let i = 0; i < ALL_TASKS.length; i++) {
+    const task = ALL_TASKS[i];
     
     try {
       const response = await octokit.rest.issues.create({
@@ -288,7 +288,7 @@ async function createIssues() {
         assignees: task.assignees
       });
       
-      console.log(`✅ [${i + 1}/${MVP_TASKS.length}] "${task.title}" を作成しました (#${response.data.number})`);
+      console.log(`✅ [${i + 1}/${ALL_TASKS.length}] "${task.title}" を作成しました (#${response.data.number})`);
       
       // API制限を回避するため少し待機
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -322,10 +322,10 @@ async function main() {
 }
 
 // 実行確認
-if (CONFIG.token === 'YOUR_PERSONAL_ACCESS_TOKEN') {
-  console.error('⚠️  設定が必要です:');
+if (!CONFIG.token) {
+  console.error('⚠️  環境変数の設定が必要です:');
   console.error('1. GitHub Personal Access Token を取得');
-  console.error('2. CONFIG の owner, repo, token を更新');
+  console.error('2. export GITHUB_TOKEN="your_token_here"');
   console.error('3. npm install @octokit/rest');
   process.exit(1);
 }

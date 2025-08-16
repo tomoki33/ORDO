@@ -10,7 +10,7 @@ const { Octokit } = require('@octokit/rest');
 const CONFIG = {
   owner: 'tomoki33',
   repo: 'ORDO',
-  token: process.env.GITHUB_TOKEN || 'YOUR_GITHUB_TOKEN_HERE'
+  token: process.env.GITHUB_TOKEN
 };
 
 const octokit = new Octokit({
