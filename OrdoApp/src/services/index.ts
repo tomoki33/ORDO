@@ -1,0 +1,7 @@
+/**
+ * Ordo App - Services Index
+ * Centralized export for all service modules
+ */
+
+export { StorageService, ProductStorage } from './StorageService';
+export { AIRecognitionService, ImageProcessingService } from './AIRecognitionService';
