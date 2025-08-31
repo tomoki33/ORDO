@@ -83,8 +83,11 @@ export const COLORS = {
   GRAY_LIGHT: '#999999',
   GRAY_LIGHTER: '#CCCCCC',
   GRAY_LIGHTEST: '#F8F9FA',
+  GRAY_50: '#F8F9FA',
+  GRAY_200: '#E5E5E7',
   
   // Background
+  BACKGROUND: '#FFFFFF',
   BACKGROUND_PRIMARY: '#FFFFFF',
   BACKGROUND_SECONDARY: '#F8F9FA',
   
@@ -94,8 +97,10 @@ export const COLORS = {
   TEXT_DISABLED: '#999999',
   
   // Borders
+  BORDER: '#E5E5E7',
   BORDER_LIGHT: '#E5E5E7',
   BORDER_MEDIUM: '#D1D1D6',
+  SHADOW: '#000000',
   
   // Freshness indicators
   FRESH: '#28A745',

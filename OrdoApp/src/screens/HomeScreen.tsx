@@ -351,3 +351,5 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.XL,
   },
 });
+
+export default HomeScreen;
