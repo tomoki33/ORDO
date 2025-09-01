@@ -1,4 +1,6 @@
 {
   "name": "OrdoApp",
-  "displayName": "OrdoApp"
+  "displayName": "Ordo - AI Home Management",
+  "version": "0.1.0",
+  "description": "AI-powered home inventory management app with smart product recognition"
 }

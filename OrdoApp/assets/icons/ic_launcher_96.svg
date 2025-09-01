@@ -1,0 +1,23 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    
+    <!-- 背景円 -->
+    <circle cx="48" cy="48" r="46" fill="url(#gradient)" />
+    
+    <!-- "O"文字 -->
+    <circle cx="48" cy="48" r="32" fill="none" stroke="#FFFFFF" stroke-width="8" />
+    
+    <!-- 中央ドット -->
+    <circle cx="48" cy="48" r="4.8" fill="#10B981" />
+    
+    <!-- 装飾的な要素 -->
+    <circle cx="32" cy="32" r="2.4" fill="#FFFFFF" opacity="0.6" />
+    <circle cx="64" cy="32" r="2.4" fill="#FFFFFF" opacity="0.6" />
+    <circle cx="32" cy="64" r="2.4" fill="#FFFFFF" opacity="0.6" />
+    <circle cx="64" cy="64" r="2.4" fill="#FFFFFF" opacity="0.6" />
+  </svg>
