@@ -3,51 +3,41 @@
  * Main dashboard screen with product overview and quick actions
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
-  Text,
   ScrollView,
-  StyleSheet,
   RefreshControl,
   Alert,
+  StyleSheet,
 } from 'react-native';
+import { 
+  Text, 
+  Card, 
+  Button as PaperButton, 
+  Surface,
+  useTheme,
+  FAB,
+  Chip,
+} from 'react-native-paper';
 import { Product } from '../types';
 import { Button, ProductCard } from '../components';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
-import { StorageService, ProductStorage } from '../services';
 import { ProductUtils, DateUtils, DebugUtils } from '../utils';
 
+// Context
+import { useAppContext, useProducts, useFilters } from '../context/AppContext';
+
 export const HomeScreen: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const theme = useTheme();
+  const { expiringProductsCount } = useAppContext();
+  const { products, isLoading, loadProducts } = useProducts();
+  const { filteredProducts } = useFilters();
 
   // Load products on mount
   useEffect(() => {
     loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    try {
-      DebugUtils.time('Load Products');
-      const loadedProducts = await StorageService.loadProducts();
-      setProducts(loadedProducts);
-      DebugUtils.log('Products loaded', loadedProducts.length);
-    } catch (error) {
-      DebugUtils.error('Failed to load products', error as Error);
-      Alert.alert('エラー', '商品データの読み込みに失敗しました');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      DebugUtils.timeEnd('Load Products');
-    }
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadProducts();
-  };
+  }, [loadProducts]);
 
   const handleAddProduct = () => {
     // TODO: Navigate to camera or add product screen
@@ -78,7 +68,7 @@ export const HomeScreen: React.FC = () => {
   const getProductStats = () => {
     const stats = {
       total: products.length,
-      expiringSoon: expiringProducts.length,
+      expiringSoon: expiringProductsCount,
       fresh: ProductUtils.filterByFreshness(products, 'fresh').length,
       expired: ProductUtils.filterByFreshness(products, 'expired').length,
     };
@@ -87,62 +77,92 @@ export const HomeScreen: React.FC = () => {
 
   const stats = getProductStats();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>読み込み中...</Text>
+        <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+          読み込み中...
+        </Text>
       </View>
     );
   }
 
   return (
     <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.welcomeText}>{getWelcomeMessage()}</Text>
-        <Text style={styles.appTitle}>Ordo</Text>
-      </View>
+      <Surface style={styles.header} elevation={1}>
+        <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+          {getWelcomeMessage()}
+        </Text>
+        <Text variant="displayMedium" style={[styles.appTitle, { color: theme.colors.primary }]}>
+          Ordo
+        </Text>
+      </Surface>
 
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.total}</Text>
-          <Text style={styles.statLabel}>総商品数</Text>
-        </View>
-        <View style={[styles.statCard, stats.expiringSoon > 0 && styles.statCardWarning]}>
-          <Text style={[styles.statNumber, stats.expiringSoon > 0 && styles.statNumberWarning]}>
-            {stats.expiringSoon}
-          </Text>
-          <Text style={styles.statLabel}>期限間近</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{stats.fresh}</Text>
-          <Text style={styles.statLabel}>新鮮</Text>
-        </View>
+        <Card style={styles.statCard}>
+          <Card.Content style={styles.statCardContent}>
+            <Text variant="displaySmall" style={[styles.statNumber, { color: theme.colors.primary }]}>
+              {stats.total}
+            </Text>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+              総商品数
+            </Text>
+          </Card.Content>
+        </Card>
+        
+        <Card style={[styles.statCard, stats.expiringSoon > 0 && { backgroundColor: theme.colors.errorContainer }]}>
+          <Card.Content style={styles.statCardContent}>
+            <Text variant="displaySmall" 
+                  style={[styles.statNumber, 
+                         { color: stats.expiringSoon > 0 ? theme.colors.onErrorContainer : theme.colors.primary }]}>
+              {stats.expiringSoon}
+            </Text>
+            <Text variant="bodyMedium" 
+                  style={{ color: stats.expiringSoon > 0 ? theme.colors.onErrorContainer : theme.colors.onSurface }}>
+              期限間近
+            </Text>
+          </Card.Content>
+        </Card>
+        
+        <Card style={styles.statCard}>
+          <Card.Content style={styles.statCardContent}>
+            <Text variant="displaySmall" style={[styles.statNumber, { color: theme.colors.primary }]}>
+              {stats.fresh}
+            </Text>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+              新鮮
+            </Text>
+          </Card.Content>
+        </Card>
       </View>
 
       {/* Quick Actions */}
       <View style={styles.actionsContainer}>
-        <Button
-          title="📷 商品を追加"
+        <PaperButton 
+          mode="contained" 
           onPress={handleAddProduct}
-          variant="primary"
-          size="large"
+          icon="camera"
+          contentStyle={styles.addButtonContent}
           style={styles.addButton}
-        />
+        >
+          商品を追加
+        </PaperButton>
       </View>
 
       {/* Expiring Products Section */}
       {expiringProducts.length > 0 && (
-        <View style={styles.section}>
+        <Surface style={styles.section} elevation={0}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>⚠️ 期限間近の商品</Text>
-            <Text style={styles.sectionCount}>({expiringProducts.length})</Text>
+            <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
+              期限間近の商品
+            </Text>
+            <Chip icon="alert-circle" mode="outlined" compact textStyle={{ fontSize: 12 }}>
+              {expiringProducts.length}件
+            </Chip>
           </View>
           {expiringProducts.slice(0, 3).map((product) => (
             <ProductCard
@@ -153,22 +173,24 @@ export const HomeScreen: React.FC = () => {
             />
           ))}
           {expiringProducts.length > 3 && (
-            <Button
-              title="すべて表示"
+            <PaperButton
+              mode="outlined"
               onPress={handleViewAllProducts}
-              variant="outline"
-              size="small"
               style={styles.viewAllButton}
-            />
+            >
+              すべて表示
+            </PaperButton>
           )}
-        </View>
+        </Surface>
       )}
 
       {/* Recent Products Section */}
       {sortedProducts.length > 0 && (
-        <View style={styles.section}>
+        <Surface style={styles.section} elevation={0}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📦 最近の商品</Text>
+            <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
+              最近の商品
+            </Text>
           </View>
           {sortedProducts.map((product) => (
             <ProductCard
@@ -177,34 +199,42 @@ export const HomeScreen: React.FC = () => {
               onPress={() => handleProductPress(product)}
             />
           ))}
-        </View>
+        </Surface>
       )}
 
       {/* Empty State */}
       {products.length === 0 && (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateTitle}>商品がありません</Text>
-          <Text style={styles.emptyStateDescription}>
-            カメラで商品を撮影して管理を始めましょう
-          </Text>
-          <Button
-            title="最初の商品を追加"
-            onPress={handleAddProduct}
-            variant="primary"
-            style={styles.emptyStateButton}
-          />
-        </View>
+        <Card style={styles.emptyState}>
+          <Card.Content style={styles.emptyStateContent}>
+            <Text variant="headlineSmall" style={[styles.emptyStateTitle, { color: theme.colors.onSurface }]}>
+              商品がありません
+            </Text>
+            <Text variant="bodyLarge" style={[styles.emptyStateDescription, { color: theme.colors.onSurfaceVariant }]}>
+              カメラで商品を撮影して管理を始めましょう
+            </Text>
+            <PaperButton
+              mode="contained"
+              onPress={handleAddProduct}
+              icon="camera-plus"
+              style={styles.emptyStateButton}
+              contentStyle={styles.emptyStateButtonContent}
+            >
+              最初の商品を追加
+            </PaperButton>
+          </Card.Content>
+        </Card>
       )}
 
       {/* All Products Button */}
       {products.length > 5 && (
         <View style={styles.bottomActions}>
-          <Button
-            title="すべての商品を表示"
+          <PaperButton
+            mode="outlined"
             onPress={handleViewAllProducts}
-            variant="outline"
-            size="large"
-          />
+            contentStyle={styles.addButtonContent}
+          >
+            すべての商品を表示
+          </PaperButton>
         </View>
       )}
     </ScrollView>
@@ -262,6 +292,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  statCardContent: {
+    alignItems: 'center',
+  },
+
   statCardWarning: {
     backgroundColor: COLORS.WARNING,
   },
@@ -290,6 +324,10 @@ const styles = StyleSheet.create({
 
   addButton: {
     marginBottom: SPACING.SM,
+  },
+
+  addButtonContent: {
+    paddingVertical: SPACING.SM,
   },
 
   section: {
@@ -327,6 +365,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
+  emptyStateContent: {
+    alignItems: 'center',
+  },
+
   emptyStateTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZE_XLARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHT_SEMIBOLD,
@@ -344,6 +386,10 @@ const styles = StyleSheet.create({
 
   emptyStateButton: {
     minWidth: 200,
+  },
+
+  emptyStateButtonContent: {
+    paddingVertical: SPACING.SM,
   },
 
   bottomActions: {
