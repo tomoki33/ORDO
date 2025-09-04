@@ -506,6 +506,98 @@ export class SQLiteService {
   }
 
   /**
+   * 通知履歴を追加
+   */
+  public async addNotificationHistory(notification: {
+    type: string;
+    title: string;
+    message: string;
+    productId: string | null;
+    scheduledAt: Date;
+    sentAt: Date | null;
+    status: string;
+  }): Promise<void> {
+    if (!this.database) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      await this.database.executeSql(
+        `INSERT INTO notification_history 
+         (type, title, message, product_id, scheduled_at, sent_at, status) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          notification.type,
+          notification.title,
+          notification.message,
+          notification.productId,
+          notification.scheduledAt.toISOString(),
+          notification.sentAt ? notification.sentAt.toISOString() : null,
+          notification.status,
+        ]
+      );
+      DebugUtils.log('Notification history added successfully');
+    } catch (error) {
+      DebugUtils.error('Failed to add notification history', error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * 通知履歴を取得
+   */
+  public async getNotificationHistory(limit: number = 50): Promise<any[]> {
+    if (!this.database) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const result = await this.database.executeSql(
+        `SELECT * FROM notification_history 
+         ORDER BY scheduled_at DESC 
+         LIMIT ?`,
+        [limit]
+      );
+
+      const notifications: any[] = [];
+      for (let i = 0; i < result[0].rows.length; i++) {
+        const row = result[0].rows.item(i);
+        notifications.push({
+          ...row,
+          scheduledAt: new Date(row.scheduled_at),
+          sentAt: row.sent_at ? new Date(row.sent_at) : null,
+        });
+      }
+      return notifications;
+    } catch (error) {
+      DebugUtils.error('Failed to get notification history', error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * 通知ステータスを更新
+   */
+  public async updateNotificationStatus(notificationId: string, status: string): Promise<void> {
+    if (!this.database) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      await this.database.executeSql(
+        `UPDATE notification_history 
+         SET status = ?, sent_at = ? 
+         WHERE id = ?`,
+        [status, new Date().toISOString(), notificationId]
+      );
+      DebugUtils.log('Notification status updated successfully');
+    } catch (error) {
+      DebugUtils.error('Failed to update notification status', error as Error);
+      throw error;
+    }
+  }
+
+  /**
    * データベース接続を閉じる
    */
   public async close(): Promise<void> {

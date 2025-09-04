@@ -6,4 +6,11 @@
 export { StorageService, ProductStorage } from './StorageService';
 export { sqliteService } from './sqliteService';
 export { cameraService, CameraService } from './CameraService';
-export { AIRecognitionService, ImageProcessingService } from './AIRecognitionService';
+export { 
+  NotificationService, 
+  notificationService
+} from './NotificationService';
+export type { 
+  NotificationConfig,
+  ScheduledNotification 
+} from './NotificationService';

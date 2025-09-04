@@ -25,6 +25,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   const { storageService } = useAppContext();
   const [isProcessing, setIsProcessing] = useState(false);
   const [capturedImage, setCapturedImage] = useState<ImageResult | null>(null);
+  const [recognitionResult, setRecognitionResult] = useState<any | null>(null);
 
   const handleOpenCamera = async () => {
     try {
@@ -55,31 +56,73 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleImageRecognition = async (image: ImageResult) => {
-    // TODO: Phase 10でAI認識機能を実装
-    // 現在は手動で商品情報を入力できるように誘導
-    Alert.alert(
-      '商品を認識しました',
-      '商品情報を確認・編集してください',
-      [
-        { text: 'キャンセル', style: 'cancel', onPress: () => setCapturedImage(null) },
-        { 
-          text: '商品を追加', 
-          onPress: () => handleAddProduct(image)
-        }
-      ]
-    );
+    try {
+      setIsProcessing(true);
+      
+      // AI認識を実行
+      const aiService = require('../services/AIRecognitionService').aiRecognitionService;
+      const result = await aiService.recognizeFood(image.uri);
+      
+      if (result) {
+        setRecognitionResult(result);
+        
+        Alert.alert(
+          '商品を認識しました',
+          `${result.name} (信頼度: ${Math.round(result.confidence * 100)}%)`,
+          [
+            { text: 'キャンセル', style: 'cancel', onPress: () => setCapturedImage(null) },
+            { 
+              text: '商品を追加', 
+              onPress: () => handleAddProduct(image)
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          '認識できませんでした',
+          '商品情報を手動で入力してください',
+          [
+            { text: 'キャンセル', style: 'cancel', onPress: () => setCapturedImage(null) },
+            { 
+              text: '手動で追加', 
+              onPress: () => handleAddProduct(image)
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('AI recognition error:', error);
+      Alert.alert(
+        '認識エラー',
+        '商品認識中にエラーが発生しました',
+        [
+          { text: 'キャンセル', style: 'cancel', onPress: () => setCapturedImage(null) },
+          { 
+            text: '手動で追加', 
+            onPress: () => handleAddProduct(image)
+          }
+        ]
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleAddProduct = async (image: ImageResult) => {
     try {
       setIsProcessing(true);
 
-      // デフォルトの商品データを作成
+      // AI認識結果または デフォルトの商品データを作成
+      const productName = recognitionResult?.name || '新しい商品';
+      const category = recognitionResult?.category || 'packaged';
+      const expirationDate = recognitionResult?.expirationDate;
+      
       const newProduct = ProductUtils.createProduct({
-        name: '新しい商品', // TODO: AI認識結果で置換
+        name: productName,
         imageUri: image.uri,
-        category: 'packaged', // TODO: AI認識結果で置換
-        confidence: 0.8, // TODO: AI認識の信頼度
+        category: category,
+        confidence: recognitionResult?.confidence || 0.5,
+        expirationDate: expirationDate,
       });
 
       // データベースに保存
@@ -87,12 +130,13 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
 
       Alert.alert(
         '追加完了',
-        '商品が正常に追加されました',
+        `${productName} が正常に追加されました`,
         [
           { 
             text: 'OK', 
             onPress: () => {
               setCapturedImage(null);
+              setRecognitionResult(null);
               navigation.navigate('Home');
             }
           }
@@ -118,6 +162,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleRetakePhoto = () => {
     setCapturedImage(null);
+    setRecognitionResult(null);
   };
 
   return (
@@ -138,6 +183,33 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
           <Card.Content>
             <Title>撮影した画像</Title>
             <Image source={{ uri: capturedImage.uri }} style={styles.capturedImage} />
+            
+            {/* AI認識結果の表示 */}
+            {recognitionResult && (
+              <View style={styles.recognitionResult}>
+                <Title style={styles.resultTitle}>AI認識結果</Title>
+                <Paragraph style={styles.resultItem}>
+                  <strong>商品名:</strong> {recognitionResult.name}
+                </Paragraph>
+                <Paragraph style={styles.resultItem}>
+                  <strong>カテゴリ:</strong> {recognitionResult.category}
+                </Paragraph>
+                <Paragraph style={styles.resultItem}>
+                  <strong>信頼度:</strong> {Math.round(recognitionResult.confidence * 100)}%
+                </Paragraph>
+                {recognitionResult.expirationDate && (
+                  <Paragraph style={styles.resultItem}>
+                    <strong>推定期限:</strong> {recognitionResult.expirationDate.toLocaleDateString('ja-JP')}
+                  </Paragraph>
+                )}
+                {recognitionResult.additionalInfo?.storageType && (
+                  <Paragraph style={styles.resultItem}>
+                    <strong>保存方法:</strong> {recognitionResult.additionalInfo.storageType}
+                  </Paragraph>
+                )}
+              </View>
+            )}
+            
             <Paragraph>
               サイズ: {cameraService.getImageResolution(capturedImage)}
             </Paragraph>
@@ -164,7 +236,9 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
           <Card.Content style={styles.processingContent}>
             <ActivityIndicator size="large" color={COLORS.PRIMARY} />
             <Paragraph style={styles.processingText}>
-              {capturedImage ? '商品を追加中...' : '画像を処理中...'}
+              {capturedImage && !recognitionResult ? 'AI認識中...' : 
+               capturedImage && recognitionResult ? '商品を追加中...' : 
+               '画像を処理中...'}
             </Paragraph>
           </Card.Content>
         </Card>
@@ -319,6 +393,23 @@ const styles = StyleSheet.create({
   },
   supportCard: {
     marginBottom: SPACING.LG,
+  },
+  recognitionResult: {
+    backgroundColor: COLORS.BACKGROUND,
+    padding: SPACING.MD,
+    borderRadius: 8,
+    marginVertical: SPACING.SM,
+    borderWidth: 1,
+    borderColor: COLORS.PRIMARY,
+  },
+  resultTitle: {
+    color: COLORS.PRIMARY,
+    fontSize: 16,
+    marginBottom: SPACING.SM,
+  },
+  resultItem: {
+    marginBottom: SPACING.XS,
+    fontSize: 14,
   },
 });
 
