@@ -7,23 +7,21 @@ import React, { useEffect } from 'react';
 import {
   View,
   ScrollView,
-  RefreshControl,
   Alert,
   StyleSheet,
 } from 'react-native';
 import { 
   Text, 
   Card, 
-  Button as PaperButton, 
+  Button as PaperButton,
   Surface,
   useTheme,
-  FAB,
   Chip,
 } from 'react-native-paper';
 import { Product } from '../types';
-import { Button, ProductCard } from '../components';
+import { ProductCard } from '../components';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
-import { ProductUtils, DateUtils, DebugUtils } from '../utils';
+import { ProductUtils } from '../utils';
 
 // Context
 import { useAppContext, useProducts, useFilters } from '../context/AppContext';
@@ -32,7 +30,7 @@ export const HomeScreen: React.FC = () => {
   const theme = useTheme();
   const { expiringProductsCount } = useAppContext();
   const { products, isLoading, loadProducts } = useProducts();
-  const { filteredProducts } = useFilters();
+  const { } = useFilters();
 
   // Load products on mount
   useEffect(() => {

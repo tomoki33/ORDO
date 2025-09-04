@@ -10,16 +10,14 @@ import {
   Switch,
   List,
   Card,
-  Button as PaperButton,
   useTheme,
   Divider,
-  IconButton,
 } from 'react-native-paper';
 import { SettingsScreenNavigationProp } from '../navigation/types';
 import { SPACING, APP_CONFIG } from '../constants';
 
 // Context
-import { useAppContext, useTheme as useAppTheme } from '../context/AppContext';
+import { useTheme as useAppTheme } from '../context/AppContext';
 
 interface Props {
   navigation: SettingsScreenNavigationProp;
@@ -29,7 +27,7 @@ interface Props {
  * Settings Screen - 設定画面
  * アプリの各種設定とユーザー設定を管理（React Native Paper + Context API対応）
  */
-const SettingsScreen: React.FC<Props> = ({ navigation }) => {
+const SettingsScreen: React.FC<Props> = () => {
   const theme = useTheme();
   const { isDarkMode, toggleTheme } = useAppTheme();
   const [notifications, setNotifications] = useState(true);

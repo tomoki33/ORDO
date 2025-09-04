@@ -13,7 +13,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import { BottomTabParamList, TabIconName } from './types';
 
 // Constants
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { COLORS, TYPOGRAPHY } from '../constants';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 

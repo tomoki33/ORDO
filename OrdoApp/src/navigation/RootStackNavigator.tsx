@@ -53,7 +53,7 @@ const RootStackNavigator: React.FC = () => {
         <Stack.Screen
           name="ProductDetail"
           component={PlaceholderScreen}
-          options={({ route }) => ({
+          options={() => ({
             title: '商品詳細',
             headerTitle: '商品詳細',
           })}

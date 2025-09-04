@@ -6,9 +6,6 @@ import { PaperProvider } from 'react-native-paper';
 // Navigation
 import RootStackNavigator from './RootStackNavigator';
 
-// Constants
-import { COLORS } from '../constants';
-
 // Theme
 import { OrdoLightTheme, OrdoDarkTheme } from '../theme/paperTheme';
 

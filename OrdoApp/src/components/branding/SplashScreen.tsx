@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
   StatusBar,
   Platform,
 } from 'react-native';
@@ -161,8 +160,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     </View>
   );
 };
-
-const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {

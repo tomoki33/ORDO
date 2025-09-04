@@ -3,8 +3,8 @@
  * React Native SQLite Storage を使用したデータ永続化層
  */
 
-import SQLite, { DatabaseParams, Transaction, SQLError } from 'react-native-sqlite-storage';
-import { Product, User, UserPreferences } from '../types';
+import SQLite from 'react-native-sqlite-storage';
+import { Product, UserPreferences } from '../types';
 import { DebugUtils } from '../utils';
 
 // SQLite設定

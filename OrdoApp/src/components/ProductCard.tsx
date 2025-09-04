@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   ViewStyle,
 } from 'react-native';
-import { Product, FreshnessLevel } from '../types';
+import { Product } from '../types';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
 import { ProductUtils, DateUtils } from '../utils';
 

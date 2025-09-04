@@ -4,14 +4,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Dimensions,
   Alert,
 } from 'react-native';
 import { AnalyticsScreenNavigationProp } from '../navigation/types';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
 import { Product } from '../types';
 import { DateUtils } from '../utils';
-import { StorageService } from '../services';
 
 interface Props {
   navigation: AnalyticsScreenNavigationProp;
@@ -21,7 +19,7 @@ interface Props {
  * Analytics Screen - 分析レポート画面
  * 商品管理の統計情報と傾向分析を表示
  */
-const AnalyticsScreen: React.FC<Props> = ({ navigation }) => {
+const AnalyticsScreen: React.FC<Props> = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -77,7 +75,7 @@ const AnalyticsScreen: React.FC<Props> = ({ navigation }) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
-    return products.filter(p => {
+    return products.filter(_p => {
       // TODO: Product型にcreatedAtプロパティを追加後に実装
       // new Date(p.createdAt) >= oneWeekAgo
       return false; // 暫定的に0を返す
@@ -213,8 +211,6 @@ const AnalyticsScreen: React.FC<Props> = ({ navigation }) => {
     </ScrollView>
   );
 };
-
-const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
