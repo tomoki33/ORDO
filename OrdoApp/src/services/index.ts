@@ -4,4 +4,6 @@
  */
 
 export { StorageService, ProductStorage } from './StorageService';
+export { sqliteService } from './sqliteService';
+export { cameraService, CameraService } from './CameraService';
 export { AIRecognitionService, ImageProcessingService } from './AIRecognitionService';

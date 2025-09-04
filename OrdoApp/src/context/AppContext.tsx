@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { Product } from '../types';
+import { DebugUtils } from '../utils';
 
 // アクションタイプの定義
 export type AppActionType =
@@ -176,6 +177,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 interface AppContextType {
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
+  storageService: any; // StorageService のインスタンス
   
   // Product actions
   loadProducts: () => Promise<void>;
@@ -210,44 +212,75 @@ interface AppProviderProps {
  */
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const [storageService, setStorageService] = React.useState<any>(null);
+
+  // StorageService初期化
+  React.useEffect(() => {
+    const initializeStorageService = async () => {
+      try {
+        const { StorageService } = require('../services');
+        await StorageService.initialize();
+        setStorageService(StorageService);
+        DebugUtils.log('StorageService initialized successfully');
+      } catch (error) {
+        DebugUtils.error('Failed to initialize StorageService:', error instanceof Error ? error : new Error(String(error)));
+      }
+    };
+
+    initializeStorageService();
+  }, []);
 
   // Product actions
   const loadProducts = useCallback(async () => {
+    if (!storageService) return;
+    
     dispatch({ type: 'LOAD_PRODUCTS_START' });
     try {
-      // ここで実際のデータ読み込み処理を実装
-      // 現在は StorageService から読み込み
-      const { StorageService } = require('../services');
-      const products = await StorageService.loadProducts();
+      DebugUtils.time('Load Products');
+      const products = await storageService.loadProducts();
       dispatch({ type: 'LOAD_PRODUCTS_SUCCESS', payload: products });
     } catch (error) {
       dispatch({ 
         type: 'LOAD_PRODUCTS_ERROR', 
         payload: error instanceof Error ? error.message : 'Unknown error'
       });
+    } finally {
+      DebugUtils.timeEnd('Load Products');
     }
-  }, []);
+  }, [storageService]);
 
-  const addProduct = useCallback((product: Product) => {
-    dispatch({ type: 'ADD_PRODUCT', payload: product });
-    // 永続化処理
-    const { StorageService } = require('../services');
-    StorageService.saveProduct(product);
-  }, []);
+  const addProduct = useCallback(async (product: Product) => {
+    if (!storageService) return;
+    
+    try {
+      await storageService.addProduct(product);
+      dispatch({ type: 'ADD_PRODUCT', payload: product });
+    } catch (error) {
+      DebugUtils.error('Failed to add product:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }, [storageService]);
 
-  const updateProduct = useCallback((product: Product) => {
-    dispatch({ type: 'UPDATE_PRODUCT', payload: product });
-    // 永続化処理
-    const { StorageService } = require('../services');
-    StorageService.updateProduct(product);
-  }, []);
+  const updateProduct = useCallback(async (product: Product) => {
+    if (!storageService) return;
+    
+    try {
+      await storageService.updateProduct(product);
+      dispatch({ type: 'UPDATE_PRODUCT', payload: product });
+    } catch (error) {
+      DebugUtils.error('Failed to update product:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }, [storageService]);
 
-  const deleteProduct = useCallback((productId: string) => {
-    dispatch({ type: 'DELETE_PRODUCT', payload: productId });
-    // 永続化処理
-    const { StorageService } = require('../services');
-    StorageService.deleteProduct(productId);
-  }, []);
+  const deleteProduct = useCallback(async (productId: string) => {
+    if (!storageService) return;
+    
+    try {
+      await storageService.deleteProduct(productId);
+      dispatch({ type: 'DELETE_PRODUCT', payload: productId });
+    } catch (error) {
+      DebugUtils.error('Failed to delete product:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }, [storageService]);
 
   const selectProduct = useCallback((product: Product | null) => {
     if (product) {
@@ -325,6 +358,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const contextValue: AppContextType = {
     state,
     dispatch,
+    storageService,
     
     // Actions
     loadProducts,

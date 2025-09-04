@@ -33,6 +33,12 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>NSCameraUsageDescription</key>
+	<string>Ordoアプリは食品の写真を撮影してAI認識を行うためにカメラを使用します</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Ordoアプリは食品の画像を選択するためにフォトライブラリにアクセスします</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Ordoアプリは撮影した食品画像を保存するためにフォトライブラリにアクセスします</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

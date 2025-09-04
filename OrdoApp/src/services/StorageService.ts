@@ -1,80 +1,100 @@
 /**
- * Ordo App - Storage Service
- * Handles persistent data storage using AsyncStorage
+ * Ordo App - Storage Service (SQLite + AsyncStorage Hybrid)
+ * Products: SQLite Database, Settings: AsyncStorage fallback
  */
 
-// Note: AsyncStorage will need to be installed: @react-native-async-storage/async-storage
-
-import { STORAGE_KEYS } from '../constants';
 import { Product, UserPreferences, AppState } from '../types';
-import { StorageUtils, DebugUtils } from '../utils';
-
-// Mock AsyncStorage interface for now (will be replaced with real implementation)
-interface AsyncStorageInterface {
-  getItem(key: string): Promise<string | null>;
-  setItem(key: string, value: string): Promise<void>;
-  removeItem(key: string): Promise<void>;
-  clear(): Promise<void>;
-}
-
-// This will be replaced with actual AsyncStorage import
-const AsyncStorage: AsyncStorageInterface = {
-  async getItem(key: string): Promise<string | null> {
-    // Mock implementation - returns null for now
-    DebugUtils.log('AsyncStorage getItem (mock)', key);
-    return null;
-  },
-  async setItem(key: string, value: string): Promise<void> {
-    // Mock implementation
-    DebugUtils.log('AsyncStorage setItem (mock)', key, value.length);
-  },
-  async removeItem(key: string): Promise<void> {
-    // Mock implementation
-    DebugUtils.log('AsyncStorage removeItem (mock)', key);
-  },
-  async clear(): Promise<void> {
-    // Mock implementation
-    DebugUtils.log('AsyncStorage clear (mock)');
-  },
-};
+import { DebugUtils } from '../utils';
+import { sqliteService } from './sqliteService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../constants';
 
 /**
  * Storage Service for persisting application data
+ * Products: SQLite database, Settings: AsyncStorage
  */
 export class StorageService {
   /**
-   * Save products to storage
+   * Initialize storage services
    */
-  static async saveProducts(products: Product[]): Promise<void> {
+  static async initialize(): Promise<void> {
     try {
-      const serialized = StorageUtils.stringify(products);
-      await AsyncStorage.setItem(STORAGE_KEYS.PRODUCTS, serialized);
-      DebugUtils.log('Products saved to storage', products.length);
+      await sqliteService.initialize();
+      DebugUtils.log('Storage services initialized successfully');
     } catch (error) {
-      DebugUtils.error('Failed to save products', error as Error);
+      DebugUtils.error('Failed to initialize storage services', error as Error);
       throw error;
     }
   }
 
   /**
-   * Load products from storage
+   * Load products from SQLite database
    */
   static async loadProducts(): Promise<Product[]> {
     try {
-      const serialized = await AsyncStorage.getItem(STORAGE_KEYS.PRODUCTS);
-      const products = StorageUtils.parseJSON<Product[]>(serialized, []);
-      
-      // Convert date strings back to Date objects
-      const processedProducts = products.map(product => ({
-        ...product,
-        expirationDate: product.expirationDate ? new Date(product.expirationDate) : new Date(),
-        addedDate: new Date(product.addedDate),
-      }));
-      
-      DebugUtils.log('Products loaded from storage', processedProducts.length);
-      return processedProducts;
+      const products = await sqliteService.getAllProducts();
+      DebugUtils.log('Products loaded from SQLite', products.length);
+      return products;
     } catch (error) {
       DebugUtils.error('Failed to load products', error as Error);
+      return [];
+    }
+  }
+
+  /**
+   * Add a single product to database
+   */
+  static async saveProduct(product: Product): Promise<void> {
+    try {
+      await sqliteService.insertProduct(product);
+      DebugUtils.log('Product saved to SQLite', product.id);
+    } catch (error) {
+      DebugUtils.error('Failed to save product', error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a product in database
+   */
+  static async updateProduct(product: Product): Promise<void> {
+    try {
+      await sqliteService.updateProduct(product);
+      DebugUtils.log('Product updated in SQLite', product.id);
+    } catch (error) {
+      DebugUtils.error('Failed to update product', error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a product from database
+   */
+  static async deleteProduct(productId: string): Promise<void> {
+    try {
+      await sqliteService.deleteProduct(productId);
+      DebugUtils.log('Product deleted from SQLite', productId);
+    } catch (error) {
+      DebugUtils.error('Failed to delete product', error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search products with filters
+   */
+  static async searchProducts(filters: {
+    category?: string;
+    location?: string;
+    expiringInDays?: number;
+    searchTerm?: string;
+  }): Promise<Product[]> {
+    try {
+      const products = await sqliteService.searchProducts(filters);
+      DebugUtils.log('Products search completed', products.length);
+      return products;
+    } catch (error) {
+      DebugUtils.error('Failed to search products', error as Error);
       return [];
     }
   }
@@ -84,9 +104,14 @@ export class StorageService {
    */
   static async savePreferences(preferences: UserPreferences): Promise<void> {
     try {
-      const serialized = StorageUtils.stringify(preferences);
+      // SQLiteにも保存
+      await sqliteService.saveUserSettings(preferences);
+      
+      // AsyncStorageにもバックアップ保存
+      const serialized = JSON.stringify(preferences);
       await AsyncStorage.setItem(STORAGE_KEYS.USER_PREFERENCES, serialized);
-      DebugUtils.log('Preferences saved to storage');
+      
+      DebugUtils.log('Preferences saved successfully');
     } catch (error) {
       DebugUtils.error('Failed to save preferences', error as Error);
       throw error;
@@ -98,10 +123,22 @@ export class StorageService {
    */
   static async loadPreferences(): Promise<UserPreferences | null> {
     try {
-      const serialized = await AsyncStorage.getItem(STORAGE_KEYS.USER_PREFERENCES);
-      const preferences = StorageUtils.parseJSON<UserPreferences | null>(serialized, null);
+      // まずSQLiteから読み込み
+      let preferences = await sqliteService.loadUserSettings();
       
-      DebugUtils.log('Preferences loaded from storage', !!preferences);
+      // SQLiteにない場合はAsyncStorageから読み込み
+      if (!preferences) {
+        const serialized = await AsyncStorage.getItem(STORAGE_KEYS.USER_PREFERENCES);
+        if (serialized) {
+          preferences = JSON.parse(serialized);
+          // SQLiteにも保存
+          if (preferences) {
+            await sqliteService.saveUserSettings(preferences);
+          }
+        }
+      }
+      
+      DebugUtils.log('Preferences loaded successfully', !!preferences);
       return preferences;
     } catch (error) {
       DebugUtils.error('Failed to load preferences', error as Error);
@@ -110,13 +147,13 @@ export class StorageService {
   }
 
   /**
-   * Save app state to storage
+   * Save app state to AsyncStorage (軽量データのみ)
    */
   static async saveAppState(appState: Partial<AppState>): Promise<void> {
     try {
-      const serialized = StorageUtils.stringify(appState);
+      const serialized = JSON.stringify(appState);
       await AsyncStorage.setItem(STORAGE_KEYS.APP_STATE, serialized);
-      DebugUtils.log('App state saved to storage');
+      DebugUtils.log('App state saved to AsyncStorage');
     } catch (error) {
       DebugUtils.error('Failed to save app state', error as Error);
       throw error;
@@ -124,14 +161,14 @@ export class StorageService {
   }
 
   /**
-   * Load app state from storage
+   * Load app state from AsyncStorage
    */
   static async loadAppState(): Promise<Partial<AppState> | null> {
     try {
       const serialized = await AsyncStorage.getItem(STORAGE_KEYS.APP_STATE);
-      const appState = StorageUtils.parseJSON<Partial<AppState> | null>(serialized, null);
+      const appState = serialized ? JSON.parse(serialized) : null;
       
-      DebugUtils.log('App state loaded from storage', !!appState);
+      DebugUtils.log('App state loaded from AsyncStorage', !!appState);
       return appState;
     } catch (error) {
       DebugUtils.error('Failed to load app state', error as Error);
@@ -170,7 +207,13 @@ export class StorageService {
    */
   static async clearAllData(): Promise<void> {
     try {
+      // AsyncStorageをクリア
       await AsyncStorage.clear();
+      
+      // SQLiteデータベースを再初期化
+      await sqliteService.close();
+      await sqliteService.initialize();
+      
       DebugUtils.log('All storage data cleared');
     } catch (error) {
       DebugUtils.error('Failed to clear storage data', error as Error);
@@ -179,50 +222,21 @@ export class StorageService {
   }
 
   /**
-   * Remove specific key from storage
+   * Database cleanup (old expired products, etc.)
    */
-  static async removeItem(key: string): Promise<void> {
+  static async cleanup(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(key);
-      DebugUtils.log('Storage item removed', key);
+      await sqliteService.cleanup();
+      DebugUtils.log('Storage cleanup completed');
     } catch (error) {
-      DebugUtils.error('Failed to remove storage item', error as Error);
+      DebugUtils.error('Failed to cleanup storage', error as Error);
       throw error;
-    }
-  }
-
-  /**
-   * Generic save method for any data
-   */
-  static async save<T>(key: string, data: T): Promise<void> {
-    try {
-      const serialized = StorageUtils.stringify(data);
-      await AsyncStorage.setItem(key, serialized);
-      DebugUtils.log('Data saved to storage', key);
-    } catch (error) {
-      DebugUtils.error('Failed to save data', error as Error);
-      throw error;
-    }
-  }
-
-  /**
-   * Generic load method for any data
-   */
-  static async load<T>(key: string, defaultValue: T): Promise<T> {
-    try {
-      const serialized = await AsyncStorage.getItem(key);
-      const data = StorageUtils.parseJSON<T>(serialized, defaultValue);
-      DebugUtils.log('Data loaded from storage', key);
-      return data;
-    } catch (error) {
-      DebugUtils.error('Failed to load data', error as Error);
-      return defaultValue;
     }
   }
 }
 
 /**
- * Product-specific storage operations
+ * Product-specific storage operations (SQLite-based)
  */
 export class ProductStorage {
   /**
@@ -230,9 +244,7 @@ export class ProductStorage {
    */
   static async addProduct(product: Product): Promise<void> {
     try {
-      const products = await StorageService.loadProducts();
-      products.push(product);
-      await StorageService.saveProducts(products);
+      await StorageService.saveProduct(product);
       DebugUtils.log('Product added', product.id);
     } catch (error) {
       DebugUtils.error('Failed to add product', error as Error);
@@ -245,15 +257,18 @@ export class ProductStorage {
    */
   static async updateProduct(productId: string, updates: Partial<Product>): Promise<void> {
     try {
+      // 既存の商品を取得
       const products = await StorageService.loadProducts();
-      const index = products.findIndex(p => p.id === productId);
+      const existingProduct = products.find(p => p.id === productId);
       
-      if (index === -1) {
+      if (!existingProduct) {
         throw new Error(`Product not found: ${productId}`);
       }
       
-      products[index] = { ...products[index], ...updates };
-      await StorageService.saveProducts(products);
+      // 更新されたプロダクトオブジェクトを作成
+      const updatedProduct: Product = { ...existingProduct, ...updates };
+      
+      await StorageService.updateProduct(updatedProduct);
       DebugUtils.log('Product updated', productId);
     } catch (error) {
       DebugUtils.error('Failed to update product', error as Error);
@@ -266,14 +281,7 @@ export class ProductStorage {
    */
   static async removeProduct(productId: string): Promise<void> {
     try {
-      const products = await StorageService.loadProducts();
-      const filteredProducts = products.filter(p => p.id !== productId);
-      
-      if (filteredProducts.length === products.length) {
-        throw new Error(`Product not found: ${productId}`);
-      }
-      
-      await StorageService.saveProducts(filteredProducts);
+      await StorageService.deleteProduct(productId);
       DebugUtils.log('Product removed', productId);
     } catch (error) {
       DebugUtils.error('Failed to remove product', error as Error);
@@ -294,6 +302,23 @@ export class ProductStorage {
     } catch (error) {
       DebugUtils.error('Failed to get product', error as Error);
       return null;
+    }
+  }
+
+  /**
+   * Search products with advanced filters
+   */
+  static async searchProducts(filters: {
+    category?: string;
+    location?: string;
+    expiringInDays?: number;
+    searchTerm?: string;
+  }): Promise<Product[]> {
+    try {
+      return await StorageService.searchProducts(filters);
+    } catch (error) {
+      DebugUtils.error('Failed to search products', error as Error);
+      return [];
     }
   }
 }

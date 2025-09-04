@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Alert,
-  TouchableOpacity,
   ScrollView,
+  Image,
 } from 'react-native';
+import { Button, Card, Title, Paragraph, ActivityIndicator } from 'react-native-paper';
 import { CameraScreenNavigationProp } from '../navigation/types';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants';
+import { COLORS, SPACING } from '../constants';
+import { cameraService, ImageResult } from '../services/CameraService';
+import { useAppContext } from '../context/AppContext';
+import { ProductUtils } from '../utils';
 
 interface Props {
   navigation: CameraScreenNavigationProp;
@@ -19,85 +22,228 @@ interface Props {
  * AI画像認識で商品を自動的に識別・登録
  */
 const CameraScreen: React.FC<Props> = ({ navigation }) => {
-  const handleOpenCamera = () => {
+  const { storageService } = useAppContext();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<ImageResult | null>(null);
+
+  const handleOpenCamera = async () => {
+    try {
+      setIsProcessing(true);
+      
+      const imageResult = await cameraService.showImagePickerOptions({
+        quality: 0.8,
+        maxWidth: 1024,
+        maxHeight: 1024,
+      });
+
+      if (imageResult) {
+        // 画像を最適化
+        const optimizedImage = await cameraService.optimizeImage(imageResult.uri, 'medium');
+        
+        if (optimizedImage) {
+          setCapturedImage(optimizedImage);
+          // TODO: AI認識機能を実装（Phase 10で追加予定）
+          handleImageRecognition(optimizedImage);
+        }
+      }
+    } catch (error) {
+      Alert.alert('エラー', '画像の処理中にエラーが発生しました');
+      console.error('Camera error:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleImageRecognition = async (image: ImageResult) => {
+    // TODO: Phase 10でAI認識機能を実装
+    // 現在は手動で商品情報を入力できるように誘導
     Alert.alert(
-      'カメラ機能',
-      '商品を撮影してAI認識を開始しますか？',
+      '商品を認識しました',
+      '商品情報を確認・編集してください',
       [
-        { text: 'キャンセル', style: 'cancel' },
-        { text: '撮影開始', onPress: () => {
-          // TODO: 実際のカメラ機能を実装
-          Alert.alert('開発中', 'カメラ機能は開発中です');
-        }}
+        { text: 'キャンセル', style: 'cancel', onPress: () => setCapturedImage(null) },
+        { 
+          text: '商品を追加', 
+          onPress: () => handleAddProduct(image)
+        }
       ]
     );
   };
 
+  const handleAddProduct = async (image: ImageResult) => {
+    try {
+      setIsProcessing(true);
+
+      // デフォルトの商品データを作成
+      const newProduct = ProductUtils.createProduct({
+        name: '新しい商品', // TODO: AI認識結果で置換
+        imageUri: image.uri,
+        category: 'packaged', // TODO: AI認識結果で置換
+        confidence: 0.8, // TODO: AI認識の信頼度
+      });
+
+      // データベースに保存
+      await storageService.addProduct(newProduct);
+
+      Alert.alert(
+        '追加完了',
+        '商品が正常に追加されました',
+        [
+          { 
+            text: 'OK', 
+            onPress: () => {
+              setCapturedImage(null);
+              navigation.navigate('Home');
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('エラー', '商品の追加に失敗しました');
+      console.error('Add product error:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleManualAdd = () => {
+    // TODO: 手動追加画面への遷移を実装
     Alert.alert('開発中', '手動追加機能は開発中です');
   };
 
   const handleBarcodeScanner = () => {
+    // TODO: バーコードスキャナー機能を実装
     Alert.alert('開発中', 'バーコードスキャナー機能は開発中です');
+  };
+
+  const handleRetakePhoto = () => {
+    setCapturedImage(null);
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* ヘッダー */}
-      <View style={styles.header}>
-        <Text style={styles.title}>商品を追加</Text>
-        <Text style={styles.subtitle}>
-          カメラで撮影すると、AIが自動的に商品を認識します
-        </Text>
-      </View>
+      <Card style={styles.headerCard}>
+        <Card.Content>
+          <Title>商品を追加</Title>
+          <Paragraph>
+            カメラで撮影すると、AIが自動的に商品を認識します
+          </Paragraph>
+        </Card.Content>
+      </Card>
+
+      {/* 撮影された画像の表示 */}
+      {capturedImage && (
+        <Card style={styles.imageCard}>
+          <Card.Content>
+            <Title>撮影した画像</Title>
+            <Image source={{ uri: capturedImage.uri }} style={styles.capturedImage} />
+            <Paragraph>
+              サイズ: {cameraService.getImageResolution(capturedImage)}
+            </Paragraph>
+            <Paragraph>
+              ファイルサイズ: {cameraService.getImageFileSize(capturedImage)}
+            </Paragraph>
+          </Card.Content>
+          <Card.Actions>
+            <Button onPress={handleRetakePhoto}>撮り直し</Button>
+            <Button 
+              mode="contained" 
+              onPress={() => handleAddProduct(capturedImage)}
+              disabled={isProcessing}
+            >
+              商品を追加
+            </Button>
+          </Card.Actions>
+        </Card>
+      )}
+
+      {/* 処理中インジケーター */}
+      {isProcessing && (
+        <Card style={styles.processingCard}>
+          <Card.Content style={styles.processingContent}>
+            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+            <Paragraph style={styles.processingText}>
+              {capturedImage ? '商品を追加中...' : '画像を処理中...'}
+            </Paragraph>
+          </Card.Content>
+        </Card>
+      )}
 
       {/* メインアクションボタン */}
-      <TouchableOpacity style={styles.primaryButton} onPress={handleOpenCamera}>
-        <Text style={styles.primaryButtonText}>📷 カメラで撮影</Text>
-      </TouchableOpacity>
+      {!capturedImage && (
+        <Button 
+          mode="contained" 
+          onPress={handleOpenCamera}
+          disabled={isProcessing}
+          style={styles.primaryButton}
+          contentStyle={styles.primaryButtonContent}
+          icon="camera"
+        >
+          カメラで撮影
+        </Button>
+      )}
 
       {/* サブアクションボタン */}
-      <View style={styles.secondaryActions}>
-        <TouchableOpacity style={styles.secondaryButton} onPress={handleBarcodeScanner}>
-          <Text style={styles.secondaryButtonText}>📊 バーコードスキャン</Text>
-        </TouchableOpacity>
+      {!capturedImage && (
+        <View style={styles.secondaryActions}>
+          <Button 
+            mode="outlined" 
+            onPress={handleBarcodeScanner}
+            disabled={isProcessing}
+            style={styles.secondaryButton}
+            icon="barcode-scan"
+          >
+            バーコード
+          </Button>
 
-        <TouchableOpacity style={styles.secondaryButton} onPress={handleManualAdd}>
-          <Text style={styles.secondaryButtonText}>✍️ 手動で追加</Text>
-        </TouchableOpacity>
-      </View>
+          <Button 
+            mode="outlined" 
+            onPress={handleManualAdd}
+            disabled={isProcessing}
+            style={styles.secondaryButton}
+            icon="pencil"
+          >
+            手動追加
+          </Button>
+        </View>
+      )}
 
       {/* 使用方法 */}
-      <View style={styles.instructionsContainer}>
-        <Text style={styles.instructionsTitle}>使用方法</Text>
-        <View style={styles.instructionItem}>
-          <Text style={styles.instructionNumber}>1</Text>
-          <Text style={styles.instructionText}>商品をカメラで撮影</Text>
-        </View>
-        <View style={styles.instructionItem}>
-          <Text style={styles.instructionNumber}>2</Text>
-          <Text style={styles.instructionText}>AI が商品を自動認識</Text>
-        </View>
-        <View style={styles.instructionItem}>
-          <Text style={styles.instructionNumber}>3</Text>
-          <Text style={styles.instructionText}>商品情報を確認・調整</Text>
-        </View>
-        <View style={styles.instructionItem}>
-          <Text style={styles.instructionNumber}>4</Text>
-          <Text style={styles.instructionText}>保存してホームに追加</Text>
-        </View>
-      </View>
+      <Card style={styles.instructionsCard}>
+        <Card.Content>
+          <Title>使用方法</Title>
+          <View style={styles.instructionItem}>
+            <Paragraph style={styles.instructionNumber}>1</Paragraph>
+            <Paragraph style={styles.instructionText}>商品をカメラで撮影</Paragraph>
+          </View>
+          <View style={styles.instructionItem}>
+            <Paragraph style={styles.instructionNumber}>2</Paragraph>
+            <Paragraph style={styles.instructionText}>AI が商品を自動認識</Paragraph>
+          </View>
+          <View style={styles.instructionItem}>
+            <Paragraph style={styles.instructionNumber}>3</Paragraph>
+            <Paragraph style={styles.instructionText}>商品情報を確認・調整</Paragraph>
+          </View>
+          <View style={styles.instructionItem}>
+            <Paragraph style={styles.instructionNumber}>4</Paragraph>
+            <Paragraph style={styles.instructionText}>保存してホームに追加</Paragraph>
+          </View>
+        </Card.Content>
+      </Card>
 
       {/* サポート情報 */}
-      <View style={styles.supportContainer}>
-        <Text style={styles.supportTitle}>対応商品</Text>
-        <Text style={styles.supportText}>
-          野菜、果物、肉類、魚類、調味料、冷凍食品など
-        </Text>
-        <Text style={styles.supportText}>
-          バーコード付き商品も自動認識可能
-        </Text>
-      </View>
+      <Card style={styles.supportCard}>
+        <Card.Content>
+          <Title>対応商品</Title>
+          <Paragraph>
+            野菜、果物、肉類、魚類、調味料、冷凍食品など
+          </Paragraph>
+          <Paragraph>
+            バーコード付き商品も自動認識可能
+          </Paragraph>
+        </Card.Content>
+      </Card>
     </ScrollView>
   );
 };
@@ -110,70 +256,46 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: SPACING.MD,
   },
-  header: {
+  headerCard: {
+    marginBottom: SPACING.LG,
+  },
+  imageCard: {
+    marginBottom: SPACING.LG,
+  },
+  capturedImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginVertical: SPACING.SM,
+  },
+  processingCard: {
+    marginBottom: SPACING.LG,
+  },
+  processingContent: {
     alignItems: 'center',
-    marginBottom: SPACING.XL,
+    paddingVertical: SPACING.LG,
   },
-  title: {
-    fontSize: TYPOGRAPHY.FONT_SIZE_HERO,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHT_BOLD,
-    color: COLORS.TEXT_PRIMARY,
-    marginBottom: SPACING.XS,
-  },
-  subtitle: {
-    fontSize: TYPOGRAPHY.FONT_SIZE_MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+  processingText: {
+    marginTop: SPACING.SM,
     textAlign: 'center',
-    lineHeight: 24,
   },
   primaryButton: {
-    backgroundColor: COLORS.PRIMARY,
-    padding: SPACING.LG,
-    borderRadius: 12,
-    alignItems: 'center',
     marginBottom: SPACING.LG,
-    elevation: 2,
-    shadowColor: COLORS.TEXT_PRIMARY,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
-  primaryButtonText: {
-    fontSize: TYPOGRAPHY.FONT_SIZE_LARGE,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHT_BOLD,
-    color: COLORS.WHITE,
+  primaryButtonContent: {
+    paddingVertical: SPACING.SM,
   },
   secondaryActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: SPACING.XL,
+    gap: SPACING.SM,
   },
   secondaryButton: {
     flex: 1,
-    backgroundColor: COLORS.WHITE,
-    padding: SPACING.MD,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: SPACING.XS,
-    borderWidth: 1,
-    borderColor: COLORS.GRAY_200,
   },
-  secondaryButtonText: {
-    fontSize: TYPOGRAPHY.FONT_SIZE_MEDIUM,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHT_MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
-  },
-  instructionsContainer: {
-    backgroundColor: COLORS.WHITE,
-    padding: SPACING.LG,
-    borderRadius: 12,
+  instructionsCard: {
     marginBottom: SPACING.LG,
-  },
-  instructionsTitle: {
-    fontSize: TYPOGRAPHY.FONT_SIZE_LARGE,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHT_BOLD,
-    color: COLORS.TEXT_PRIMARY,
-    marginBottom: SPACING.MD,
   },
   instructionItem: {
     flexDirection: 'row',
@@ -187,32 +309,16 @@ const styles = StyleSheet.create({
     color: COLORS.WHITE,
     borderRadius: 12,
     textAlign: 'center',
-    fontSize: TYPOGRAPHY.FONT_SIZE_SMALL,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHT_BOLD,
+    fontSize: 12,
+    fontWeight: 'bold',
     lineHeight: 24,
     marginRight: SPACING.SM,
   },
   instructionText: {
-    fontSize: TYPOGRAPHY.FONT_SIZE_MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
     flex: 1,
   },
-  supportContainer: {
-    backgroundColor: COLORS.GRAY_50,
-    padding: SPACING.LG,
-    borderRadius: 12,
-  },
-  supportTitle: {
-    fontSize: TYPOGRAPHY.FONT_SIZE_MEDIUM,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHT_BOLD,
-    color: COLORS.TEXT_PRIMARY,
-    marginBottom: SPACING.SM,
-  },
-  supportText: {
-    fontSize: TYPOGRAPHY.FONT_SIZE_SMALL,
-    color: COLORS.TEXT_SECONDARY,
-    marginBottom: SPACING.XS,
-    lineHeight: 20,
+  supportCard: {
+    marginBottom: SPACING.LG,
   },
 });
 
