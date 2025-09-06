@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ordo App - Demo Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 390px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 16px 8px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .content {
+            padding: 20px;
+            min-height: 400px;
+        }
+        
+        .screen {
+            display: none;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+        
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        
+        .button:hover {
+            background: #5a6fd8;
+        }
+        
+        .button.secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .button.secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .product-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .product-image {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 8px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .product-info {
+            flex: 1;
+        }
+        
+        .product-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .product-date {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status.fresh {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .status.warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .status.expired {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .demo-note {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍎 Ordo</h1>
+            <p>AI-powered Home Inventory Management</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showScreen('home')">ホーム</button>
+            <button class="tab" onclick="showScreen('camera')">カメラ</button>
+            <button class="tab" onclick="showScreen('analytics')">分析</button>
+            <button class="tab" onclick="showScreen('settings')">設定</button>
+        </div>
+        
+        <div class="content">
+            <!-- ホーム画面 -->
+            <div id="home" class="screen active">
+                <div class="demo-note">
+                    📱 <strong>デモ画面</strong>: 実装されたOrdoアプリの主要機能プレビュー
+                </div>
+                
+                <div class="card">
+                    <h3>🏠 我が家の食品</h3>
+                    <p>現在登録されている食品を管理できます</p>
+                </div>
+                
+                <div class="product-item">
+                    <div class="product-image">🥛</div>
+                    <div class="product-info">
+                        <div class="product-name">牛乳</div>
+                        <div class="product-date">期限: 2025/09/10</div>
+                    </div>
+                    <div class="status fresh">新鮮</div>
+                </div>
+                
+                <div class="product-item">
+                    <div class="product-image">🍎</div>
+                    <div class="product-info">
+                        <div class="product-name">りんご</div>
+                        <div class="product-date">期限: 2025/09/08</div>
+                    </div>
+                    <div class="status warning">注意</div>
+                </div>
+                
+                <div class="product-item">
+                    <div class="product-image">🥖</div>
+                    <div class="product-info">
+                        <div class="product-name">パン</div>
+                        <div class="product-date">期限: 2025/09/06</div>
+                    </div>
+                    <div class="status expired">期限切れ</div>
+                </div>
+            </div>
+            
+            <!-- カメラ画面 -->
+            <div id="camera" class="screen">
+                <div class="demo-note">
+                    📸 <strong>AI認識機能</strong>: カメラで撮影した食品を自動認識
+                </div>
+                
+                <div class="card">
+                    <h3>📱 商品を追加</h3>
+                    <p>カメラで撮影すると、AIが自動的に商品を認識します</p>
+                </div>
+                
+                <button class="button">📷 カメラで撮影</button>
+                <button class="button secondary">📁 ギャラリーから選択</button>
+                <button class="button secondary">📱 バーコードスキャン</button>
+                
+                <div class="card">
+                    <h3>🤖 AI認識結果</h3>
+                    <div class="product-item">
+                        <div class="product-image">🧀</div>
+                        <div class="product-info">
+                            <div class="product-name">チーズ</div>
+                            <div class="product-date">信頼度: 89%</div>
+                        </div>
+                    </div>
+                    <p style="margin-top: 12px; font-size: 13px;">
+                        カテゴリ: 乳製品<br>
+                        推定期限: 10日後<br>
+                        保存方法: 冷蔵
+                    </p>
+                </div>
+            </div>
+            
+            <!-- 分析画面 -->
+            <div id="analytics" class="screen">
+                <div class="demo-note">
+                    📊 <strong>データ分析</strong>: 食品管理の統計情報と傾向
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number">15</div>
+                        <div class="stat-label">総商品数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">期限切れ間近</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📈 廃棄削減効果</h3>
+                    <p>今月の廃棄削減: <strong>2,400円相当</strong></p>
+                    <p>CO2削減: <strong>1.2kg</strong></p>
+                </div>
+                
+                <div class="card">
+                    <h3>🏆 よく購入する商品</h3>
+                    <p>1. 牛乳 (月4回)<br>2. パン (月6回)<br>3. 卵 (月3回)</p>
+                </div>
+            </div>
+            
+            <!-- 設定画面 -->
+            <div id="settings" class="screen">
+                <div class="demo-note">
+                    ⚙️ <strong>アプリ設定</strong>: 通知やテーマのカスタマイズ
+                </div>
+                
+                <div class="card">
+                    <h3>🔔 通知設定</h3>
+                    <p>✅ 期限切れ警告<br>✅ 日次リマインダー<br>❌ プッシュ通知</p>
+                </div>
+                
+                <div class="card">
+                    <h3>🎨 テーマ設定</h3>
+                    <p>ライトモード / ダークモード<br>現在: <strong>ライトモード</strong></p>
+                </div>
+                
+                <div class="card">
+                    <h3>💾 データ管理</h3>
+                    <p>バックアップ / 復元<br>データ削除</p>
+                </div>
+                
+                <div class="card">
+                    <h3>ℹ️ アプリ情報</h3>
+                    <p>バージョン: 0.1.0<br>開発者: tomoki33</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showScreen(screenName) {
+            // すべての画面を非表示
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // すべてのタブを非アクティブ
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 選択された画面とタブをアクティブに
+            document.getElementById(screenName).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
