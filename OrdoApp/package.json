@@ -16,7 +16,10 @@
     "test:watch": "jest --watch",
     "type-check": "tsc --noEmit",
     "clean": "npx react-native clean",
-    "postinstall": "cd ios && pod install && cd .."
+    "postinstall": "cd ios && pod install && cd ..",
+    "demo": "node scripts/run-demo.js",
+    "demo:phase10": "node -e \"require('./src/utils/Phase10ExtensionDemo').phase10ExtensionDemo.runCompleteDemo()\"",
+    "demo:phase11": "node -e \"require('./src/utils/Phase11NewFeaturesDemo').phase11NewFeaturesDemo.runCompleteDemo()\""
   },
   "keywords": [
     "react-native",
