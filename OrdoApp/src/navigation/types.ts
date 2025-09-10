@@ -39,6 +39,9 @@ export type StackParamList = {
     category?: string;
     filter?: 'all' | 'expiring' | 'fresh';
   };
+  RecognitionResult: {
+    result: any;
+  };
 };
 
 /**
