@@ -10,6 +10,8 @@ export interface Category {
   description?: string;
   isSystemCategory: boolean;
   displayOrder?: number;
+  isActive: boolean;
+  defaultExpirationDays?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +24,8 @@ export interface CategoryCreateInput {
   description?: string;
   isSystemCategory?: boolean;
   displayOrder?: number;
+  isActive?: boolean;
+  defaultExpirationDays?: number;
 }
 
 export class CategoryRepository extends BaseRepository<Category> {
@@ -46,8 +50,8 @@ export class CategoryRepository extends BaseRepository<Category> {
       await tx.executeSql(
         `INSERT INTO categories (
           id, name, parentId, level, icon, color, description, 
-          isSystemCategory, displayOrder, createdAt, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          isSystemCategory, displayOrder, isActive, defaultExpirationDays, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           categoryData.name,
@@ -58,6 +62,8 @@ export class CategoryRepository extends BaseRepository<Category> {
           categoryData.description || null,
           categoryData.isSystemCategory ? 1 : 0,
           categoryData.displayOrder || null,
+          categoryData.isActive !== false ? 1 : 0,
+          categoryData.defaultExpirationDays || null,
           now,
           now
         ]
@@ -110,7 +116,7 @@ export class CategoryRepository extends BaseRepository<Category> {
 
       Object.entries(updates).forEach(([key, value]) => {
         if (value !== undefined && key !== 'id' && key !== 'createdAt' && key !== 'level') {
-          if (key === 'isSystemCategory') {
+          if (key === 'isSystemCategory' || key === 'isActive') {
             setClause.push(`${key} = ?`);
             values.push(value ? 1 : 0);
           } else if (key === 'updatedAt') {
@@ -305,6 +311,113 @@ export class CategoryRepository extends BaseRepository<Category> {
     return result[0].rowsAffected > 0;
   }
 
+  // Additional methods for settings management
+  async findActive(): Promise<Category[]> {
+    const result = await this.executeQuery(
+      'SELECT * FROM categories WHERE isActive = 1 AND deletedAt IS NULL ORDER BY level ASC, displayOrder ASC, name ASC'
+    );
+
+    const categories: Category[] = [];
+    for (let i = 0; i < result[0].rows.length; i++) {
+      categories.push(this.mapRowToCategory(result[0].rows.item(i)));
+    }
+
+    return categories;
+  }
+
+  async toggleActive(categoryId: string): Promise<boolean> {
+    const category = await this.findById(categoryId);
+    if (!category) {
+      return false;
+    }
+
+    const result = await this.executeQuery(
+      'UPDATE categories SET isActive = ?, updatedAt = ? WHERE id = ?',
+      [category.isActive ? 0 : 1, this.now(), categoryId]
+    );
+
+    return result[0].rowsAffected > 0;
+  }
+
+  async getProductCount(categoryId: string): Promise<number> {
+    const result = await this.executeQuery(
+      'SELECT COUNT(*) as count FROM products WHERE category = ? AND deletedAt IS NULL',
+      [categoryId]
+    );
+
+    return result[0].rows.item(0).count;
+  }
+
+  async getCategoriesWithProductCount(): Promise<CategoryWithCount[]> {
+    const result = await this.executeQuery(
+      `SELECT c.*, COUNT(p.id) as productCount 
+       FROM categories c 
+       LEFT JOIN products p ON c.id = p.category AND p.deletedAt IS NULL 
+       WHERE c.deletedAt IS NULL 
+       GROUP BY c.id 
+       ORDER BY c.level ASC, c.displayOrder ASC, c.name ASC`
+    );
+
+    const categories: CategoryWithCount[] = [];
+    for (let i = 0; i < result[0].rows.length; i++) {
+      const row = result[0].rows.item(i);
+      categories.push({
+        ...this.mapRowToCategory(row),
+        productCount: row.productCount
+      });
+    }
+
+    return categories;
+  }
+
+  async searchCategories(query: string): Promise<Category[]> {
+    const result = await this.executeQuery(
+      `SELECT * FROM categories 
+       WHERE (name LIKE ? OR description LIKE ?) 
+       AND deletedAt IS NULL 
+       ORDER BY level ASC, displayOrder ASC, name ASC`,
+      [`%${query}%`, `%${query}%`]
+    );
+
+    const categories: Category[] = [];
+    for (let i = 0; i < result[0].rows.length; i++) {
+      categories.push(this.mapRowToCategory(result[0].rows.item(i)));
+    }
+
+    return categories;
+  }
+
+  async canDeleteCategory(categoryId: string): Promise<{ canDelete: boolean; reason?: string }> {
+    // Check if category has products
+    const productCount = await this.getProductCount(categoryId);
+    if (productCount > 0) {
+      return { 
+        canDelete: false, 
+        reason: `カテゴリには${productCount}個の商品が含まれています` 
+      };
+    }
+
+    // Check if category has subcategories
+    const subcategories = await this.findByParentId(categoryId);
+    if (subcategories.length > 0) {
+      return { 
+        canDelete: false, 
+        reason: `カテゴリには${subcategories.length}個のサブカテゴリが含まれています` 
+      };
+    }
+
+    // Check if it's a system category
+    const category = await this.findById(categoryId);
+    if (category?.isSystemCategory) {
+      return { 
+        canDelete: false, 
+        reason: 'システムカテゴリは削除できません' 
+      };
+    }
+
+    return { canDelete: true };
+  }
+
   private mapRowToCategory(row: any): Category {
     return {
       id: row.id,
@@ -316,6 +429,8 @@ export class CategoryRepository extends BaseRepository<Category> {
       description: row.description,
       isSystemCategory: Boolean(row.isSystemCategory),
       displayOrder: row.displayOrder,
+      isActive: Boolean(row.isActive),
+      defaultExpirationDays: row.defaultExpirationDays,
       createdAt: new Date(row.createdAt),
       updatedAt: new Date(row.updatedAt),
     };
@@ -324,4 +439,12 @@ export class CategoryRepository extends BaseRepository<Category> {
 
 export interface CategoryTreeNode extends Category {
   children: CategoryTreeNode[];
+}
+
+export interface CategoryWithCount extends Category {
+  productCount: number;
+}
+
+export interface CategoryWithCount extends Category {
+  productCount: number;
 }

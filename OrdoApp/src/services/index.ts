@@ -5,6 +5,7 @@
  * Phase 13 Complete - Database and Storage Implementation
  * Phase 14 Complete - Notification System
  * Phase 15 Complete - Error Monitoring & Logging System
+ * Phase 16 Complete - Settings, Category Management & Data Export/Import
  */
 
 export { StorageService, ProductStorage } from './StorageService';
@@ -174,6 +175,15 @@ export type {
   ConflictInfo,
   CacheEntry,
 } from './OfflineErrorHandler';
+
+// Phase 16 - Settings & Data Management Services
+export { DataExportImportService } from './DataExportImportService';
+export type {
+  ExportData,
+  ImportResult as DataImportResult,
+  ExportOptions as DataExportOptions,
+  ImportOptions as DataImportOptions,
+} from './DataExportImportService';
 
 // Service initialization utility
 export const initializeServices = async (): Promise<void> => {
