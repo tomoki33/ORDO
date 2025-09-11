@@ -1,0 +1,43 @@
+name: "Ordo CodeQL Configuration"
+
+disable-default-queries: false
+
+queries:
+  - uses: security-and-quality
+  - uses: security-extended
+
+paths:
+  - "OrdoApp/src"
+  - "OrdoApp/__tests__"
+
+paths-ignore:
+  - "OrdoApp/node_modules"
+  - "OrdoApp/android/build"
+  - "OrdoApp/ios/build"
+  - "OrdoApp/coverage"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "**/*.spec.tsx"
+
+# JavaScript/TypeScript specific configuration
+languages:
+  - javascript
+
+# Custom queries for React Native security
+query-filters:
+  - exclude:
+      id: 
+        - js/unused-local-variable
+        - js/debugger-statement
+  - include:
+      tags:
+        - security
+        - correctness
+        - maintainability
+
+# Experimental features
+advanced-security:
+  enable: true
+  
+sarif-category: "/language:javascript"
