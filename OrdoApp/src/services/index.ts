@@ -237,6 +237,15 @@ export type {
   MitigationPlan,
 } from './SecurityAuditService';
 
+// Phase 18 - Onboarding System
+export { OnboardingService, onboardingService } from './OnboardingService';
+export type {
+  OnboardingStep,
+  OnboardingProgress,
+  OnboardingConfiguration,
+  OnboardingMetrics,
+} from './OnboardingService';
+
 // Service initialization utility
 export const initializeServices = async (): Promise<void> => {
   try {
@@ -287,6 +296,11 @@ export const initializeServices = async (): Promise<void> => {
     await gdprComplianceService.initialize();
     await securityAuditService.initialize();
     
+    // Phase 6: Onboarding System
+    console.log('Phase 6: Onboarding System');
+    const { onboardingService } = await import('./OnboardingService');
+    await onboardingService.initialize();
+    
     console.log('✅ All services initialized successfully');
     
     // Log successful initialization
@@ -295,7 +309,7 @@ export const initializeServices = async (): Promise<void> => {
       'All application services initialized successfully',
       {
         timestamp: new Date().toISOString(),
-        phases: ['infrastructure', 'storage', 'notifications', 'user_services', 'security'],
+        phases: ['infrastructure', 'storage', 'notifications', 'user_services', 'security', 'onboarding'],
       }
     );
     
@@ -334,6 +348,7 @@ export const getServiceStatus = async (): Promise<{
   privacyPolicy: boolean;
   gdprCompliance: boolean;
   securityAudit: boolean;
+  onboarding: boolean;
 }> => {
   try {
     // Import services dynamically
@@ -349,6 +364,7 @@ export const getServiceStatus = async (): Promise<{
     const { privacyPolicyService } = await import('./PrivacyPolicyService');
     const { gdprComplianceService } = await import('./GDPRComplianceService');
     const { securityAuditService } = await import('./SecurityAuditService');
+    const { onboardingService } = await import('./OnboardingService');
     
     // Check all services
     const imageStorageStats = await imageStorage.getStorageStats();
@@ -388,6 +404,10 @@ export const getServiceStatus = async (): Promise<{
     const securityTests = await securityAuditService.getSecurityTests();
     const securityAuditOk = Array.isArray(securityTests);
 
+    // Check onboarding service
+    const onboardingConfig = onboardingService.getConfiguration();
+    const onboardingOk = onboardingConfig !== null;
+
     const databaseOk = true; // Assume database is working if we got this far
 
     return {
@@ -404,6 +424,7 @@ export const getServiceStatus = async (): Promise<{
       privacyPolicy: privacyPolicyOk,
       gdprCompliance: gdprComplianceOk,
       securityAudit: securityAuditOk,
+      onboarding: onboardingOk,
     };
   } catch (error) {
     console.error('Error checking service status:', error);
@@ -421,6 +442,7 @@ export const getServiceStatus = async (): Promise<{
       privacyPolicy: false,
       gdprCompliance: false,
       securityAudit: false,
+      onboarding: false,
     };
   }
 };
