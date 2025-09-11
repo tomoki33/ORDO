@@ -6,6 +6,7 @@
  * Phase 14 Complete - Notification System
  * Phase 15 Complete - Error Monitoring & Logging System
  * Phase 16 Complete - Settings, Category Management & Data Export/Import
+ * Phase 17 Complete - Security and Privacy Protection Implementation
  */
 
 export { StorageService, ProductStorage } from './StorageService';
@@ -185,6 +186,57 @@ export type {
   ImportOptions as DataImportOptions,
 } from './DataExportImportService';
 
+// Phase 17 - Security and Privacy Protection Services
+export { DataEncryptionService } from './DataEncryptionService';
+export type {
+  EncryptionConfig,
+  EncryptedData,
+} from './DataEncryptionService';
+
+export { LocalDataProtectionService, localDataProtectionService } from './LocalDataProtectionService';
+export type {
+  DataProtectionConfig,
+  DataClassification,
+  DataAccessLog,
+  DataIntegrityCheck,
+} from './LocalDataProtectionService';
+
+export { ProtectedRepositoryWrapper, ProtectedRepositoryFactory } from './ProtectedRepositoryWrapper';
+
+export { PrivacyPolicyService, privacyPolicyService } from './PrivacyPolicyService';
+export type {
+  PrivacyConsent,
+  DataSubjectRequest,
+  PrivacyPolicyVersion,
+  PrivacyPolicyContent,
+  PrivacyPolicySection,
+  ContactInfo,
+  LegalBasis,
+  DataRetentionPolicy,
+} from './PrivacyPolicyService';
+
+export { GDPRComplianceService, gdprComplianceService } from './GDPRComplianceService';
+export type {
+  GDPRComplianceStatus,
+  ComplianceIssue,
+  DataMapping,
+  DataSubjectRights,
+  BreachIncident,
+} from './GDPRComplianceService';
+
+export { SecurityAuditService, securityAuditService } from './SecurityAuditService';
+export type {
+  SecurityTest,
+  SecurityTestResult,
+  SecurityFinding,
+  SecurityAuditReport,
+  PenetrationTestScenario,
+  VulnerabilityAssessment,
+  Vulnerability,
+  RiskMatrix,
+  MitigationPlan,
+} from './SecurityAuditService';
+
 // Service initialization utility
 export const initializeServices = async (): Promise<void> => {
   try {
@@ -212,11 +264,9 @@ export const initializeServices = async (): Promise<void> => {
     
     // Phase 3: Notification System
     console.log('Phase 3: Notification System');
-    const { expirationCalculationService } = await import('./ExpirationCalculationService');
     const { localNotificationService } = await import('./LocalNotificationService');
     const { backgroundProcessingService } = await import('./BackgroundProcessingService');
     
-    await expirationCalculationService.initialize();
     await localNotificationService.initialize();
     await backgroundProcessingService.initialize();
     
@@ -224,6 +274,18 @@ export const initializeServices = async (): Promise<void> => {
     console.log('Phase 4: User Services');
     const { userFeedbackService } = await import('./UserFeedbackService');
     await userFeedbackService.initialize();
+    
+    // Phase 5: Security and Privacy Protection
+    console.log('Phase 5: Security and Privacy Protection');
+    const { localDataProtectionService } = await import('./LocalDataProtectionService');
+    const { privacyPolicyService } = await import('./PrivacyPolicyService');
+    const { gdprComplianceService } = await import('./GDPRComplianceService');
+    const { securityAuditService } = await import('./SecurityAuditService');
+    
+    await localDataProtectionService.initialize();
+    await privacyPolicyService.initialize();
+    await gdprComplianceService.initialize();
+    await securityAuditService.initialize();
     
     console.log('✅ All services initialized successfully');
     
@@ -233,7 +295,7 @@ export const initializeServices = async (): Promise<void> => {
       'All application services initialized successfully',
       {
         timestamp: new Date().toISOString(),
-        phases: ['infrastructure', 'storage', 'notifications', 'user_services'],
+        phases: ['infrastructure', 'storage', 'notifications', 'user_services', 'security'],
       }
     );
     
@@ -268,6 +330,10 @@ export const getServiceStatus = async (): Promise<{
   logging: boolean;
   userFeedback: boolean;
   offlineHandling: boolean;
+  dataProtection: boolean;
+  privacyPolicy: boolean;
+  gdprCompliance: boolean;
+  securityAudit: boolean;
 }> => {
   try {
     // Import services dynamically
@@ -279,6 +345,10 @@ export const getServiceStatus = async (): Promise<{
     const { loggingService } = await import('./LoggingService');
     const { userFeedbackService } = await import('./UserFeedbackService');
     const { offlineErrorHandler } = await import('./OfflineErrorHandler');
+    const { localDataProtectionService } = await import('./LocalDataProtectionService');
+    const { privacyPolicyService } = await import('./PrivacyPolicyService');
+    const { gdprComplianceService } = await import('./GDPRComplianceService');
+    const { securityAuditService } = await import('./SecurityAuditService');
     
     // Check all services
     const imageStorageStats = await imageStorage.getStorageStats();
@@ -305,6 +375,19 @@ export const getServiceStatus = async (): Promise<{
     const networkInfo = offlineErrorHandler.getNetworkInfo();
     const offlineHandlingOk = networkInfo !== null;
 
+    // Check security services
+    const dataProtectionConfig = localDataProtectionService.getConfiguration();
+    const dataProtectionOk = dataProtectionConfig !== null;
+
+    const currentPolicy = await privacyPolicyService.getCurrentPrivacyPolicy();
+    const privacyPolicyOk = currentPolicy !== null;
+
+    const complianceStatus = await gdprComplianceService.getLatestComplianceStatus();
+    const gdprComplianceOk = true; // Service availability, not compliance status
+
+    const securityTests = await securityAuditService.getSecurityTests();
+    const securityAuditOk = Array.isArray(securityTests);
+
     const databaseOk = true; // Assume database is working if we got this far
 
     return {
@@ -317,6 +400,10 @@ export const getServiceStatus = async (): Promise<{
       logging: loggingOk,
       userFeedback: userFeedbackOk,
       offlineHandling: offlineHandlingOk,
+      dataProtection: dataProtectionOk,
+      privacyPolicy: privacyPolicyOk,
+      gdprCompliance: gdprComplianceOk,
+      securityAudit: securityAuditOk,
     };
   } catch (error) {
     console.error('Error checking service status:', error);
@@ -330,6 +417,10 @@ export const getServiceStatus = async (): Promise<{
       logging: false,
       userFeedback: false,
       offlineHandling: false,
+      dataProtection: false,
+      privacyPolicy: false,
+      gdprCompliance: false,
+      securityAudit: false,
     };
   }
 };
