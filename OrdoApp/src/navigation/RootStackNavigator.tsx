@@ -94,6 +94,32 @@ const RootStackNavigator: React.FC = () => {
             headerTitle: route.params?.category ? `${route.params.category}の商品` : '商品一覧',
           })}
         />
+
+        <Stack.Screen
+          name="BarcodeScanner"
+          component={(props: any) => {
+            const BarcodeScannerScreen = require('../screens/BarcodeScannerScreen').default;
+            return <BarcodeScannerScreen {...props} />;
+          }}
+          options={{
+            title: 'バーコードスキャン',
+            headerTitle: 'バーコードスキャン',
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
+          name="ProductAutoFillForm"
+          component={(props: any) => {
+            const ProductAutoFillForm = require('../components/ProductAutoFillForm').default;
+            return <ProductAutoFillForm {...props} />;
+          }}
+          options={{
+            title: '商品情報入力',
+            headerTitle: '商品情報入力',
+            headerShown: false,
+          }}
+        />
       </Stack.Group>
     </Stack.Navigator>
   );

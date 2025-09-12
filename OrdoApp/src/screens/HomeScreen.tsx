@@ -18,16 +18,23 @@ import {
   useTheme,
   Chip,
 } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+
 import { Product } from '../types';
 import { ProductCard } from '../components';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
 import { ProductUtils } from '../utils';
+import type { StackParamList } from '../navigation/types';
 
 // Context
 import { useAppContext, useProducts, useFilters } from '../context/AppContext';
 
+type HomeScreenNavigationProp = StackNavigationProp<StackParamList>;
+
 export const HomeScreen: React.FC = () => {
   const theme = useTheme();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const { expiringProductsCount } = useAppContext();
   const { products, isLoading, loadProducts } = useProducts();
   const { } = useFilters();
@@ -38,8 +45,23 @@ export const HomeScreen: React.FC = () => {
   }, [loadProducts]);
 
   const handleAddProduct = () => {
-    // TODO: Navigate to camera or add product screen
-    Alert.alert('開発中', 'カメラ機能は開発中です');
+    navigation.navigate('BarcodeScanner');
+  };
+
+  const handleAddProductManual = () => {
+    navigation.navigate('ProductAutoFillForm', {});
+  };
+
+  const handleViewDemo = () => {
+    // Navigate to demo screen - for development/testing
+    Alert.alert(
+      'バーコード統合デモ',
+      '実装した機能のデモンストレーションを表示しますか？',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '表示', onPress: () => console.log('Demo navigation would go here') },
+      ]
+    );
   };
 
   const handleProductPress = (product: Product) => {
@@ -143,11 +165,21 @@ export const HomeScreen: React.FC = () => {
         <PaperButton 
           mode="contained" 
           onPress={handleAddProduct}
-          icon="camera"
+          icon="barcode-scan"
+          contentStyle={styles.addButtonContent}
+          style={[styles.addButton, { marginBottom: SPACING.SM }]}
+        >
+          バーコードで追加
+        </PaperButton>
+        
+        <PaperButton 
+          mode="outlined" 
+          onPress={handleAddProductManual}
+          icon="pencil-plus"
           contentStyle={styles.addButtonContent}
           style={styles.addButton}
         >
-          商品を追加
+          手動で追加
         </PaperButton>
       </View>
 
@@ -213,11 +245,11 @@ export const HomeScreen: React.FC = () => {
             <PaperButton
               mode="contained"
               onPress={handleAddProduct}
-              icon="camera-plus"
+              icon="barcode-scan"
               style={styles.emptyStateButton}
               contentStyle={styles.emptyStateButtonContent}
             >
-              最初の商品を追加
+              バーコードで最初の商品を追加
             </PaperButton>
           </Card.Content>
         </Card>

@@ -33,6 +33,7 @@ export interface AutoFillOptions {
   cacheTimeout?: number; // minutes
   maxAlternatives?: number;
   requireMinConfidence?: number;
+  confidenceThreshold?: number;
   preferredSources?: ('rakuten')[];
   enableFallback?: boolean;
 }

@@ -1,6 +1,7 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { ProductData } from '../services/ProductAutoFillService';
 
 // ====================
 // Navigation Types
@@ -42,6 +43,11 @@ export type StackParamList = {
   RecognitionResult: {
     result: any;
   };
+  BarcodeScanner: undefined;
+  ProductAutoFillForm: {
+    productData?: ProductData;
+    isFromScan?: boolean;
+  };
 };
 
 /**
@@ -55,6 +61,8 @@ export type SettingsScreenNavigationProp = BottomTabNavigationProp<BottomTabPara
 export type ProductDetailScreenNavigationProp = StackNavigationProp<StackParamList, 'ProductDetail'>;
 export type AddProductScreenNavigationProp = StackNavigationProp<StackParamList, 'AddProduct'>;
 export type EditProductScreenNavigationProp = StackNavigationProp<StackParamList, 'EditProduct'>;
+export type BarcodeScannerScreenNavigationProp = StackNavigationProp<StackParamList, 'BarcodeScanner'>;
+export type ProductAutoFillFormNavigationProp = StackNavigationProp<StackParamList, 'ProductAutoFillForm'>;
 
 /**
  * Combined Navigation Props for screens that need both tab and stack navigation
@@ -97,6 +105,8 @@ export type NavigationActions = {
   goToEditProduct: (productId: string) => void;
   goToCameraCapture: () => void;
   goToProductList: (options?: StackParamList['ProductList']) => void;
+  goToBarcodeScanner: () => void;
+  goToProductAutoFillForm: (productData?: ProductData, isFromScan?: boolean) => void;
   goBack: () => void;
   canGoBack: () => boolean;
 };
@@ -124,6 +134,8 @@ export type ScreenTitles = {
   EditProduct: '商品編集';
   CameraCapture: '撮影';
   ProductList: '商品一覧';
+  BarcodeScanner: 'バーコードスキャン';
+  ProductAutoFillForm: '商品情報入力';
 };
 
 // ====================
