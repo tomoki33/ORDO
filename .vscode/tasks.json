@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Metro Development Server",
+			"type": "shell",
+			"command": "cd /Users/tomoki33/Desktop/Ordo/OrdoApp && npx react-native start",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": [],
+			"args": []
+		}
+	]
+}

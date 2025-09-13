@@ -246,6 +246,37 @@ export type {
   OnboardingMetrics,
 } from './OnboardingService';
 
+// Phase 19 - Usage Analytics and Predictive Recommendation System
+export { usageAnalyticsEngine } from './UsageAnalyticsEngine';
+export type {
+  UsageEvent,
+  ConsumptionPattern as AnalyticsConsumptionPattern,
+  SeasonalPattern,
+  UsageAnalyticsConfig,
+  AnalyticsMetrics,
+} from './UsageAnalyticsEngine';
+
+export { predictiveAlgorithmService } from './PredictiveAlgorithmService';
+export type {
+  PredictionResult,
+  RecommendationItem,
+  SmartShoppingList,
+  ConsumptionForecast,
+  PredictionConfig,
+  UserPreferences,
+} from './PredictiveAlgorithmService';
+
+export { learningDataService } from './LearningDataAccumulationService';
+export type {
+  LearningDataPoint,
+  ModelPerformanceMetrics,
+  LearningProgress,
+  LearningConfig,
+  DataValidationResult,
+} from './LearningDataAccumulationService';
+
+export { default as RecommendationSystemUI } from '../components/RecommendationSystemUI';
+
 // Service initialization utility
 export const initializeServices = async (): Promise<void> => {
   try {
@@ -301,6 +332,16 @@ export const initializeServices = async (): Promise<void> => {
     const { onboardingService } = await import('./OnboardingService');
     await onboardingService.initialize();
     
+    // Phase 7: Usage Analytics and Predictive Recommendation System
+    console.log('Phase 7: Usage Analytics and Predictive System');
+    const { usageAnalyticsEngine } = await import('./UsageAnalyticsEngine');
+    const { predictiveAlgorithmService } = await import('./PredictiveAlgorithmService');
+    const { learningDataService } = await import('./LearningDataAccumulationService');
+    
+    await usageAnalyticsEngine.initialize();
+    await predictiveAlgorithmService.initialize();
+    await learningDataService.initialize();
+    
     console.log('✅ All services initialized successfully');
     
     // Log successful initialization
@@ -309,7 +350,7 @@ export const initializeServices = async (): Promise<void> => {
       'All application services initialized successfully',
       {
         timestamp: new Date().toISOString(),
-        phases: ['infrastructure', 'storage', 'notifications', 'user_services', 'security', 'onboarding'],
+        phases: ['infrastructure', 'storage', 'notifications', 'user_services', 'security', 'onboarding', 'analytics_prediction'],
       }
     );
     

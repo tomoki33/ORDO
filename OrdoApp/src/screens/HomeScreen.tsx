@@ -3,7 +3,7 @@
  * Main dashboard screen with product overview and quick actions
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -27,6 +27,25 @@ import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
 import { ProductUtils } from '../utils';
 import type { StackParamList } from '../navigation/types';
 
+// Voice UI Components
+import { 
+  VoiceRecognitionButton, 
+  VoiceFeedback, 
+  VoiceVisualizer, 
+  LanguageSelector,
+  VoiceCommandHelp 
+} from '../components/VoiceUI';
+
+// Voice Services
+import { voiceCommandService } from '../services/VoiceCommandAnalysisService';
+import { multilingualService } from '../services/MultilingualExtensionService';
+
+// Analytics and Recommendation Services
+import { usageAnalyticsEngine } from '../services/UsageAnalyticsEngine';
+import { predictiveAlgorithmService, RecommendationItem } from '../services/PredictiveAlgorithmService';
+import { learningDataService } from '../services/LearningDataAccumulationService';
+import RecommendationSystemUI from '../components/RecommendationSystemUI';
+
 // Context
 import { useAppContext, useProducts, useFilters } from '../context/AppContext';
 
@@ -39,10 +58,38 @@ export const HomeScreen: React.FC = () => {
   const { products, isLoading, loadProducts } = useProducts();
   const { } = useFilters();
 
+  // Voice Recognition State
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const [voiceFeedback, setVoiceFeedback] = useState<{
+    isVisible: boolean;
+    text: string;
+    confidence: number;
+    language: string;
+  }>({
+    isVisible: false,
+    text: '',
+    confidence: 0,
+    language: 'ja-JP',
+  });
+  const [currentLanguage, setCurrentLanguage] = useState('ja-JP');
+  const [showVoiceHelp, setShowVoiceHelp] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'recommendations'>('overview');
+
   // Load products on mount
   useEffect(() => {
     loadProducts();
+    initializeVoiceServices();
   }, [loadProducts]);
+
+  const initializeVoiceServices = async () => {
+    try {
+      await voiceCommandService.initialize();
+      const language = multilingualService.getCurrentLanguage();
+      setCurrentLanguage(language);
+    } catch (error) {
+      console.warn('Voice services initialization failed:', error);
+    }
+  };
 
   const handleAddProduct = () => {
     navigation.navigate('BarcodeScanner');
@@ -54,6 +101,93 @@ export const HomeScreen: React.FC = () => {
 
   const handleReceiptScan = () => {
     navigation.navigate('ReceiptScanner');
+  };
+
+  // Recommendation System Handlers
+  const handleAddToCart = async (item: RecommendationItem) => {
+    try {
+      // Record user action for learning
+      await learningDataService.recordUserAction(
+        'add_to_cart_from_recommendation',
+        {
+          productId: item.productId,
+          productName: item.productName,
+          recommendedQuantity: item.recommendedQuantity,
+          urgency: item.urgency,
+          confidence: item.confidence,
+        }
+      );
+
+      // Navigate to product form 
+      navigation.navigate('ProductAutoFillForm', {});
+
+      Alert.alert('カートに追加', `${item.productName}をカートに追加しました。`);
+    } catch (error) {
+      console.error('Failed to add item to cart:', error);
+      Alert.alert('エラー', 'カートへの追加に失敗しました。');
+    }
+  };
+
+  const handleDismissRecommendation = async (productId: string) => {
+    try {
+      // Record dismissal for learning
+      await learningDataService.recordUserAction(
+        'dismiss_recommendation',
+        { productId }
+      );
+
+      Alert.alert('推奨を無視', '推奨を無視しました。フィードバックありがとうございます。');
+    } catch (error) {
+      console.error('Failed to dismiss recommendation:', error);
+    }
+  };
+
+  const handleConfigureSettings = () => {
+    // Navigate to recommendations tab (which includes analytics)
+    setActiveTab('recommendations');
+  };
+
+  // Voice Recognition Handlers
+  const handleVoiceStart = () => {
+    setIsVoiceListening(true);
+    setVoiceFeedback(prev => ({ ...prev, isVisible: false }));
+  };
+
+  const handleVoiceStop = () => {
+    setIsVoiceListening(false);
+  };
+
+  const handleVoiceResult = (result: any) => {
+    setVoiceFeedback({
+      isVisible: true,
+      text: result.transcript,
+      confidence: result.confidence,
+      language: result.language,
+    });
+  };
+
+  const handleVoiceError = (error: any) => {
+    setIsVoiceListening(false);
+    Alert.alert('音声認識エラー', '音声認識でエラーが発生しました。もう一度お試しください。');
+  };
+
+  const handleLanguageChange = async (language: string) => {
+    try {
+      await multilingualService.setLanguage(language);
+      setCurrentLanguage(language);
+      voiceCommandService.updateConfig({ language });
+      
+      Alert.alert(
+        '言語変更', 
+        `音声認識の言語を${language}に変更しました。`
+      );
+    } catch (error) {
+      Alert.alert('エラー', '言語の変更に失敗しました。');
+    }
+  };
+
+  const dismissVoiceFeedback = () => {
+    setVoiceFeedback(prev => ({ ...prev, isVisible: false }));
   };
 
   const handleViewDemo = () => {
@@ -115,14 +249,68 @@ export const HomeScreen: React.FC = () => {
     <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      {/* Voice Feedback Overlay */}
+      <VoiceFeedback
+        isVisible={voiceFeedback.isVisible}
+        text={voiceFeedback.text}
+        confidence={voiceFeedback.confidence}
+        language={voiceFeedback.language}
+        onDismiss={dismissVoiceFeedback}
+      />
+
+      {/* Voice Command Help */}
+      <VoiceCommandHelp
+        isVisible={showVoiceHelp}
+        onClose={() => setShowVoiceHelp(false)}
+        language={currentLanguage}
+      />
+
       {/* Header */}
       <Surface style={styles.header} elevation={1}>
-        <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-          {getWelcomeMessage()}
-        </Text>
-        <Text variant="displayMedium" style={[styles.appTitle, { color: theme.colors.primary }]}>
-          Ordo
-        </Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+              {getWelcomeMessage()}
+            </Text>
+            <Text variant="displayMedium" style={[styles.appTitle, { color: theme.colors.primary }]}>
+              Ordo
+            </Text>
+          </View>
+          
+          {/* Language Selector */}
+          <LanguageSelector
+            currentLanguage={currentLanguage}
+            onLanguageChange={handleLanguageChange}
+            style={styles.languageSelector}
+          />
+        </View>
+
+        {/* Voice Controls */}
+        <View style={styles.voiceControls}>
+          <VoiceVisualizer
+            isActive={isVoiceListening}
+            style={styles.visualizer}
+            color={theme.colors.primary}
+          />
+          
+          <VoiceRecognitionButton
+            onStart={handleVoiceStart}
+            onStop={handleVoiceStop}
+            onResult={handleVoiceResult}
+            onError={handleVoiceError}
+            size="large"
+            theme="light"
+            style={styles.voiceButton}
+          />
+          
+          <PaperButton
+            mode="text"
+            onPress={() => setShowVoiceHelp(true)}
+            style={styles.helpButton}
+          >
+            ヘルプ
+          </PaperButton>
+        </View>
       </Surface>
 
       {/* Stats Cards */}
@@ -439,6 +627,38 @@ const styles = StyleSheet.create({
   bottomActions: {
     padding: SPACING.MD,
     paddingBottom: SPACING.XL,
+  },
+
+  // Voice UI Styles
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.MD,
+  },
+
+  languageSelector: {
+    marginTop: SPACING.XS,
+  },
+
+  voiceControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.MD,
+    gap: SPACING.MD,
+  },
+
+  visualizer: {
+    flex: 1,
+  },
+
+  voiceButton: {
+    marginHorizontal: SPACING.SM,
+  },
+
+  helpButton: {
+    flex: 1,
   },
 });
 

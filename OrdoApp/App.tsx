@@ -20,6 +20,11 @@ import { performanceMonitor } from './src/services/PerformanceMonitorService';
 import { memoryOptimizer } from './src/services/MemoryOptimizationService';
 import { backgroundProcessor } from './src/services/BackgroundProcessingOptimizationService';
 
+// Voice Recognition Services
+import { voiceRecognitionService } from './src/services/VoiceRecognitionService';
+import { voiceCommandService } from './src/services/VoiceCommandAnalysisService';
+import { multilingualService } from './src/services/MultilingualExtensionService';
+
 /**
  * Main App Component
  * スプラッシュ画面とReact Navigationを統合
@@ -46,7 +51,18 @@ function App(): React.JSX.Element {
         await Promise.all([
           startupOptimizer.ensureModuleLoaded('PerformanceMonitor'),
           startupOptimizer.ensureModuleLoaded('MemoryOptimizer'),
+          startupOptimizer.ensureModuleLoaded('VoiceRecognition'),
+          startupOptimizer.ensureModuleLoaded('MultilingualSupport'),
         ]);
+        
+        // 音声認識サービスの初期化
+        try {
+          await multilingualService.initialize();
+          await voiceCommandService.initialize();
+          console.log('🎙️ Voice recognition services initialized');
+        } catch (error) {
+          console.warn('⚠️ Voice recognition initialization failed (optional):', error);
+        }
         
         // バックグラウンドタスクの登録
         backgroundProcessor.registerTask({
