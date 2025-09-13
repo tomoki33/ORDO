@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DebugUtils } from '../utils';
 import { sqliteService } from './sqliteService';
 import { Product } from '../types';
+import { firebaseService } from './FirebaseServiceSwitcher';
+import { userManagementService } from './UserManagementService';
 
 export interface NotificationConfig {
   enabled: boolean;
@@ -12,21 +14,50 @@ export interface NotificationConfig {
   weeklyReminderEnabled: boolean;
   soundEnabled: boolean;
   vibrationEnabled: boolean;
+  // 新しい設定項目
+  familyNotificationsEnabled: boolean;
+  sharedInventoryNotificationsEnabled: boolean;
+  shoppingListNotificationsEnabled: boolean;
+  activityNotificationsEnabled: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursStart: string; // HH:MM format
+  quietHoursEnd: string; // HH:MM format
 }
 
 export interface ScheduledNotification {
   id: string;
   productId: string;
-  type: 'expiration_warning' | 'expired_item' | 'daily_reminder' | 'weekly_summary';
+  type: 'expiration_warning' | 'expired_item' | 'daily_reminder' | 'weekly_summary' |
+        'family_invitation' | 'member_joined' | 'member_left' | 'role_changed' |
+        'inventory_shared' | 'inventory_updated' | 'shopping_item_added' |
+        'shopping_item_completed' | 'activity_summary';
   title: string;
   message: string;
   scheduledAt: Date;
   status: 'pending' | 'sent' | 'cancelled';
+  // 新しいフィールド
+  familyId?: string;
+  fromUserId?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  category?: 'inventory' | 'family' | 'shopping' | 'system';
+  data?: Record<string, any>;
+}
+
+export interface FamilyNotificationData {
+  familyId: string;
+  fromUserId: string;
+  fromUserName: string;
+  type: string;
+  title: string;
+  message: string;
+  data?: Record<string, any>;
+  timestamp: number;
 }
 
 export class NotificationService {
   private static instance: NotificationService;
   private isInitialized = false;
+  private userManagement: typeof userManagementService;
   private defaultConfig: NotificationConfig = {
     enabled: true,
     daysBeforeExpiration: 3,
@@ -34,9 +65,19 @@ export class NotificationService {
     weeklyReminderEnabled: true,
     soundEnabled: true,
     vibrationEnabled: true,
+    // 新しい設定項目のデフォルト値
+    familyNotificationsEnabled: true,
+    sharedInventoryNotificationsEnabled: true,
+    shoppingListNotificationsEnabled: true,
+    activityNotificationsEnabled: true,
+    quietHoursEnabled: true,
+    quietHoursStart: '22:00',
+    quietHoursEnd: '07:00',
   };
 
-  private constructor() {}
+  private constructor() {
+    this.userManagement = userManagementService;
+  }
 
   public static getInstance(): NotificationService {
     if (!NotificationService.instance) {
@@ -411,6 +452,446 @@ export class NotificationService {
       },
       requestPermissions: Platform.OS === 'ios',
     });
+  }
+
+  // ============= 新しいファミリー通知機能 =============
+
+  /**
+   * ファミリーメンバーに通知を送信
+   */
+  public async sendFamilyNotification(notificationData: FamilyNotificationData): Promise<void> {
+    try {
+      if (!this.defaultConfig.familyNotificationsEnabled) return;
+
+      const familyGroup = this.userManagement.getCurrentFamilyGroup();
+      if (!familyGroup) {
+        throw new Error('Family group not found');
+      }
+      const familyMembers = familyGroup.members;
+      
+      // 送信者以外のメンバーに通知
+      const recipients = familyMembers.filter((member: any) => member.userId !== notificationData.fromUserId);
+
+      for (const member of recipients) {
+        // ユーザーの通知設定を確認
+        const memberConfig = await this.getUserNotificationConfig(member.userId);
+        if (!memberConfig?.familyNotificationsEnabled) continue;
+
+        // 静寂時間の確認
+        if (this.isInQuietHours(memberConfig)) {
+          // 緊急でない通知は後で送信
+          if (notificationData.type !== 'security_alert') {
+            await this.scheduleDelayedNotification(notificationData, member.userId);
+            continue;
+          }
+        }
+
+        const notificationId = `family_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // 通知データを保存
+        await firebaseService.collection('familyNotifications')
+          .doc(notificationId)
+          .set({
+            ...notificationData,
+            recipientUserId: member.userId,
+            id: notificationId,
+            isRead: false,
+            createdAt: Date.now(),
+          });
+
+        // ローカル通知を送信
+        await this.sendLocalNotification({
+          id: notificationId,
+          productId: '',
+          type: notificationData.type as any,
+          title: notificationData.title,
+          message: notificationData.message,
+          scheduledAt: new Date(),
+          status: 'pending',
+          familyId: notificationData.familyId,
+          fromUserId: notificationData.fromUserId,
+          category: 'family',
+          priority: 'medium',
+          data: notificationData.data,
+        });
+      }
+
+      DebugUtils.log('Family notification sent to', recipients.length, 'members');
+    } catch (error) {
+      DebugUtils.error('Failed to send family notification:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  /**
+   * 共有在庫の変更通知
+   */
+  public async sendSharedInventoryNotification(
+    familyId: string,
+    fromUserId: string,
+    action: 'added' | 'updated' | 'removed' | 'low_stock' | 'expired',
+    itemName: string,
+    itemId?: string
+  ): Promise<void> {
+    try {
+      if (!this.defaultConfig.sharedInventoryNotificationsEnabled) return;
+
+      const fromUser = await this.userManagement.getCurrentUser();
+      const userName = fromUser?.displayName || 'メンバー';
+
+      let title: string;
+      let message: string;
+      let priority: 'low' | 'medium' | 'high' | 'urgent' = 'medium';
+
+      switch (action) {
+        case 'added':
+          title = '在庫追加';
+          message = `${userName}が${itemName}を在庫に追加しました`;
+          priority = 'low';
+          break;
+        case 'updated':
+          title = '在庫更新';
+          message = `${userName}が${itemName}の情報を更新しました`;
+          priority = 'low';
+          break;
+        case 'removed':
+          title = '在庫削除';
+          message = `${userName}が${itemName}を在庫から削除しました`;
+          priority = 'medium';
+          break;
+        case 'low_stock':
+          title = '在庫不足';
+          message = `${itemName}の在庫が少なくなっています`;
+          priority = 'high';
+          break;
+        case 'expired':
+          title = '期限切れ';
+          message = `${itemName}の期限が切れています`;
+          priority = 'urgent';
+          break;
+      }
+
+      await this.sendFamilyNotification({
+        familyId,
+        fromUserId,
+        fromUserName: userName,
+        type: `inventory_${action}`,
+        title,
+        message,
+        data: { itemName, itemId, action },
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      DebugUtils.error('Failed to send shared inventory notification:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  /**
+   * 買い物リストの通知
+   */
+  public async sendShoppingListNotification(
+    familyId: string,
+    fromUserId: string,
+    action: 'item_added' | 'item_completed' | 'list_created' | 'list_shared',
+    details: { listName?: string; itemName?: string; listId?: string }
+  ): Promise<void> {
+    try {
+      if (!this.defaultConfig.shoppingListNotificationsEnabled) return;
+
+      const fromUser = await this.userManagement.getCurrentUser();
+      const userName = fromUser?.displayName || 'メンバー';
+
+      let title: string;
+      let message: string;
+
+      switch (action) {
+        case 'item_added':
+          title = '買い物リスト追加';
+          message = `${userName}が${details.itemName}を買い物リストに追加しました`;
+          break;
+        case 'item_completed':
+          title = '買い物完了';
+          message = `${userName}が${details.itemName}を購入しました`;
+          break;
+        case 'list_created':
+          title = '買い物リスト作成';
+          message = `${userName}が新しい買い物リスト「${details.listName}」を作成しました`;
+          break;
+        case 'list_shared':
+          title = '買い物リスト共有';
+          message = `${userName}が買い物リスト「${details.listName}」を共有しました`;
+          break;
+      }
+
+      await this.sendFamilyNotification({
+        familyId,
+        fromUserId,
+        fromUserName: userName,
+        type: action,
+        title,
+        message,
+        data: details,
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      DebugUtils.error('Failed to send shopping list notification:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  /**
+   * ファミリー管理の通知
+   */
+  public async sendFamilyManagementNotification(
+    familyId: string,
+    fromUserId: string,
+    action: 'member_invited' | 'member_joined' | 'member_left' | 'role_changed',
+    targetUserName: string,
+    details?: { newRole?: string; oldRole?: string }
+  ): Promise<void> {
+    try {
+      if (!this.defaultConfig.familyNotificationsEnabled) return;
+
+      const fromUser = await this.userManagement.getCurrentUser();
+      const userName = fromUser?.displayName || 'メンバー';
+
+      let title: string;
+      let message: string;
+      let priority: 'low' | 'medium' | 'high' | 'urgent' = 'medium';
+
+      switch (action) {
+        case 'member_invited':
+          title = 'メンバー招待';
+          message = `${userName}が${targetUserName}をファミリーに招待しました`;
+          break;
+        case 'member_joined':
+          title = '新メンバー参加';
+          message = `${targetUserName}がファミリーに参加しました`;
+          priority = 'high';
+          break;
+        case 'member_left':
+          title = 'メンバー退出';
+          message = `${targetUserName}がファミリーから退出しました`;
+          priority = 'high';
+          break;
+        case 'role_changed':
+          title = '役割変更';
+          message = `${targetUserName}の役割が${details?.oldRole}から${details?.newRole}に変更されました`;
+          break;
+      }
+
+      await this.sendFamilyNotification({
+        familyId,
+        fromUserId,
+        fromUserName: userName,
+        type: action,
+        title,
+        message,
+        data: { targetUserName, ...details },
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      DebugUtils.error('Failed to send family management notification:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  /**
+   * 活動サマリー通知
+   */
+  public async sendActivitySummaryNotification(familyId: string): Promise<void> {
+    try {
+      if (!this.defaultConfig.activityNotificationsEnabled) return;
+
+      // 過去24時間の活動を取得
+      const activities = await this.getFamilyActivities(familyId, 24);
+      if (activities.length === 0) return;
+
+      const summary = this.generateActivitySummary(activities);
+      
+      await this.sendFamilyNotification({
+        familyId,
+        fromUserId: 'system',
+        fromUserName: 'システム',
+        type: 'activity_summary',
+        title: '活動サマリー',
+        message: summary,
+        data: { activityCount: activities.length },
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      DebugUtils.error('Failed to send activity summary notification:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  // ============= ヘルパーメソッド =============
+
+  /**
+   * ユーザーの通知設定を取得
+   */
+  private async getUserNotificationConfig(userId: string): Promise<NotificationConfig | null> {
+    try {
+      const configString = await AsyncStorage.getItem(`notification_config_${userId}`);
+      if (configString) {
+        return JSON.parse(configString);
+      }
+      return this.defaultConfig;
+    } catch (error) {
+      DebugUtils.error('Failed to get user notification config:', error instanceof Error ? error : new Error(String(error)));
+      return null;
+    }
+  }
+
+  /**
+   * 静寂時間中かどうかを確認
+   */
+  private isInQuietHours(config: NotificationConfig): boolean {
+    if (!config.quietHoursEnabled) return false;
+
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    
+    const current = this.timeToMinutes(currentTime);
+    const start = this.timeToMinutes(config.quietHoursStart);
+    const end = this.timeToMinutes(config.quietHoursEnd);
+
+    if (start <= end) {
+      return current >= start && current <= end;
+    } else {
+      // 日をまたぐ場合
+      return current >= start || current <= end;
+    }
+  }
+
+  /**
+   * 時間を分に変換
+   */
+  private timeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  /**
+   * 遅延通知をスケジュール
+   */
+  private async scheduleDelayedNotification(
+    notificationData: FamilyNotificationData,
+    userId: string
+  ): Promise<void> {
+    try {
+      const config = await this.getUserNotificationConfig(userId);
+      if (!config) return;
+
+      // 静寂時間終了後に送信するようにスケジュール
+      const endTime = config.quietHoursEnd;
+      const [hours, minutes] = endTime.split(':').map(Number);
+      
+      const scheduledTime = new Date();
+      scheduledTime.setHours(hours, minutes, 0, 0);
+      
+      // 翌日の場合
+      if (scheduledTime <= new Date()) {
+        scheduledTime.setDate(scheduledTime.getDate() + 1);
+      }
+
+      await this.scheduleLocalNotification({
+        id: `delayed_${Date.now()}_${userId}`,
+        productId: '',
+        type: notificationData.type as any,
+        title: notificationData.title,
+        message: notificationData.message,
+        scheduledAt: scheduledTime,
+        status: 'pending',
+        familyId: notificationData.familyId,
+        fromUserId: notificationData.fromUserId,
+        category: 'family',
+        data: notificationData.data,
+      });
+    } catch (error) {
+      DebugUtils.error('Failed to schedule delayed notification:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  /**
+   * ファミリーの活動を取得
+   */
+  private async getFamilyActivities(familyId: string, hours: number): Promise<any[]> {
+    try {
+      const since = Date.now() - (hours * 60 * 60 * 1000);
+      const snapshot = await firebaseService.collection('familyActivities')
+        .where('familyId', '==', familyId)
+        .where('timestamp', '>=', since)
+        .orderBy('timestamp', 'desc')
+        .get();
+
+      return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      DebugUtils.error('Failed to get family activities:', error instanceof Error ? error : new Error(String(error)));
+      return [];
+    }
+  }
+
+  /**
+   * 活動サマリーを生成
+   */
+  private generateActivitySummary(activities: any[]): string {
+    const activityTypes = activities.reduce((acc, activity) => {
+      acc[activity.type] = (acc[activity.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const summaryParts: string[] = [];
+    
+    if (activityTypes.inventory_added) {
+      summaryParts.push(`在庫追加: ${activityTypes.inventory_added}件`);
+    }
+    if (activityTypes.shopping_completed) {
+      summaryParts.push(`買い物完了: ${activityTypes.shopping_completed}件`);
+    }
+    if (activityTypes.member_activity) {
+      summaryParts.push(`メンバー活動: ${activityTypes.member_activity}件`);
+    }
+
+    return summaryParts.length > 0 
+      ? `過去24時間の活動: ${summaryParts.join(', ')}`
+      : '過去24時間に新しい活動がありました';
+  }
+
+  /**
+   * ローカル通知を送信（拡張版）
+   */
+  private async sendLocalNotification(notification: ScheduledNotification): Promise<void> {
+    try {
+      const channelId = this.getChannelIdForType(notification.type);
+      
+      PushNotification.localNotification({
+        id: notification.id,
+        channelId,
+        title: notification.title,
+        message: notification.message,
+        soundName: this.defaultConfig.soundEnabled ? 'default' : undefined,
+        vibrate: this.defaultConfig.vibrationEnabled,
+        playSound: this.defaultConfig.soundEnabled,
+        userInfo: {
+          type: notification.type,
+          productId: notification.productId,
+          familyId: notification.familyId,
+          fromUserId: notification.fromUserId,
+          category: notification.category,
+          priority: notification.priority,
+          data: notification.data,
+        },
+      });
+
+      // 通知履歴をFirestoreに保存
+      await firebaseService.collection('notificationHistory')
+        .add({
+          ...notification,
+          sentAt: Date.now(),
+          status: 'sent',
+        });
+
+      DebugUtils.log('Local notification sent:', notification.title);
+    } catch (error) {
+      DebugUtils.error('Failed to send local notification:', error instanceof Error ? error : new Error(String(error)));
+    }
   }
 
   /**
