@@ -14,6 +14,7 @@ export type BottomTabParamList = {
   Home: undefined;
   Camera: undefined;
   Analytics: undefined;
+  Performance: undefined;
   Settings: undefined;
 };
 
@@ -57,6 +58,7 @@ export type StackParamList = {
 export type HomeScreenNavigationProp = BottomTabNavigationProp<BottomTabParamList, 'Home'>;
 export type CameraScreenNavigationProp = BottomTabNavigationProp<BottomTabParamList, 'Camera'>;
 export type AnalyticsScreenNavigationProp = BottomTabNavigationProp<BottomTabParamList, 'Analytics'>;
+export type PerformanceScreenNavigationProp = BottomTabNavigationProp<BottomTabParamList, 'Performance'>;
 export type SettingsScreenNavigationProp = BottomTabNavigationProp<BottomTabParamList, 'Settings'>;
 
 export type ProductDetailScreenNavigationProp = StackNavigationProp<StackParamList, 'ProductDetail'>;
@@ -121,6 +123,7 @@ export type TabIconName = {
   Home: 'home';
   Camera: 'camera';
   Analytics: 'analytics';
+  Performance: 'speed';
   Settings: 'settings';
 };
 
@@ -131,6 +134,7 @@ export type ScreenTitles = {
   Home: 'ホーム';
   Camera: 'カメラ';
   Analytics: '分析';
+  Performance: 'パフォーマンス';
   Settings: '設定';
   ProductDetail: '商品詳細';
   AddProduct: '商品追加';

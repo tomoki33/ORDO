@@ -8,6 +8,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import CameraScreen from '../screens/CameraScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import { PerformanceDashboardScreen } from '../screens/PerformanceDashboardScreen';
 
 // Types
 import { BottomTabParamList, TabIconName } from './types';
@@ -24,6 +25,7 @@ const tabIcons: TabIconName = {
   Home: 'home',
   Camera: 'camera',
   Analytics: 'analytics',
+  Performance: 'speed',
   Settings: 'settings',
 };
 
@@ -116,6 +118,17 @@ const BottomTabNavigator: React.FC = () => {
         options={{
           title: '分析',
           headerTitle: '分析レポート',
+        }}
+      />
+
+      {/* パフォーマンス監視画面 */}
+      <Tab.Screen
+        name="Performance"
+        component={PerformanceDashboardScreen}
+        options={{
+          title: 'パフォーマンス',
+          headerTitle: 'パフォーマンス監視',
+          headerShown: false, // 画面内でカスタムヘッダーを使用
         }}
       />
 
