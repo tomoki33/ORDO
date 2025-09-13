@@ -52,6 +52,10 @@ export const HomeScreen: React.FC = () => {
     navigation.navigate('ProductAutoFillForm', {});
   };
 
+  const handleReceiptScan = () => {
+    navigation.navigate('ReceiptScanner');
+  };
+
   const handleViewDemo = () => {
     // Navigate to demo screen - for development/testing
     Alert.alert(
@@ -180,6 +184,16 @@ export const HomeScreen: React.FC = () => {
           style={styles.addButton}
         >
           手動で追加
+        </PaperButton>
+
+        <PaperButton 
+          mode="outlined" 
+          onPress={handleReceiptScan}
+          icon="receipt"
+          contentStyle={styles.addButtonContent}
+          style={styles.addButton}
+        >
+          レシートで追加
         </PaperButton>
       </View>
 

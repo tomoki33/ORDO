@@ -5,6 +5,9 @@ import { View, Text, StyleSheet } from 'react-native';
 // Navigation
 import BottomTabNavigator from './BottomTabNavigator';
 
+// Screens
+import ReceiptScannerScreen from '../screens/ReceiptScannerScreen';
+
 // Types
 import { StackParamList } from './types';
 
@@ -108,16 +111,23 @@ const RootStackNavigator: React.FC = () => {
           }}
         />
 
-        <Stack.Screen
+                <Stack.Screen
           name="ProductAutoFillForm"
-          component={(props: any) => {
-            const ProductAutoFillForm = require('../components/ProductAutoFillForm').default;
-            return <ProductAutoFillForm {...props} />;
-          }}
+          component={PlaceholderScreen}
           options={{
             title: '商品情報入力',
             headerTitle: '商品情報入力',
             headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
+          name="ReceiptScanner"
+          component={ReceiptScannerScreen}
+          options={{
+            title: 'レシートスキャン',
+            headerTitle: 'レシートスキャン',
+            presentation: 'modal',
           }}
         />
       </Stack.Group>

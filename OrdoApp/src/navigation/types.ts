@@ -48,6 +48,7 @@ export type StackParamList = {
     productData?: ProductData;
     isFromScan?: boolean;
   };
+  ReceiptScanner: undefined;
 };
 
 /**
@@ -63,6 +64,7 @@ export type AddProductScreenNavigationProp = StackNavigationProp<StackParamList,
 export type EditProductScreenNavigationProp = StackNavigationProp<StackParamList, 'EditProduct'>;
 export type BarcodeScannerScreenNavigationProp = StackNavigationProp<StackParamList, 'BarcodeScanner'>;
 export type ProductAutoFillFormNavigationProp = StackNavigationProp<StackParamList, 'ProductAutoFillForm'>;
+export type ReceiptScannerScreenNavigationProp = StackNavigationProp<StackParamList, 'ReceiptScanner'>;
 
 /**
  * Combined Navigation Props for screens that need both tab and stack navigation
@@ -107,6 +109,7 @@ export type NavigationActions = {
   goToProductList: (options?: StackParamList['ProductList']) => void;
   goToBarcodeScanner: () => void;
   goToProductAutoFillForm: (productData?: ProductData, isFromScan?: boolean) => void;
+  goToReceiptScanner: () => void;
   goBack: () => void;
   canGoBack: () => boolean;
 };
@@ -136,6 +139,7 @@ export type ScreenTitles = {
   ProductList: '商品一覧';
   BarcodeScanner: 'バーコードスキャン';
   ProductAutoFillForm: '商品情報入力';
+  ReceiptScanner: 'レシートスキャン';
 };
 
 // ====================
