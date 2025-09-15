@@ -1,13 +1,14 @@
 /**
  * Ordo App - Components Index
  * Centralized export for all UI components
- * Phase 12 Complete - Advanced UI Components
  */
 
+// Core Components
 export { Button } from './Button';
 export { ProductCard } from './ProductCard';
+export { ProductAutoFillForm } from './ProductAutoFillForm';
 
-// Phase 12 - Enhanced UI Components
+// Advanced UI Components
 export { 
   DetectionVisualization,
   BatchProgressDisplay,
@@ -18,15 +19,36 @@ export {
   RegionExtractionManager
 } from './EnhancedUIComponents';
 
+// Analytics & Data Visualization
+export { default as AnalyticsChartsUI } from './AnalyticsChartsUI';
+
+// Demo & Integration Components
+export { default as BarcodeIntegrationDemo } from './BarcodeIntegrationDemo';
+export { default as DemoRunner } from './DemoRunner';
+export { default as FoodStatusUIIntegration } from './FoodStatusUIIntegration';
+
+// AI & Voice Components
+export { default as VoiceUI } from './VoiceUI';
+export { default as RecommendationSystemUI } from './RecommendationSystemUI';
+
+// Cloud & Monitoring
+export { default as CloudServiceMonitor } from './CloudServiceMonitor';
+
+// Family & Sharing
+export { default as FamilyManagementUI } from './FamilyManagementUI';
+export { default as SharedInventoryUI } from './SharedInventoryUI';
+
+// Branding Components
+export { SplashScreen } from './branding/SplashScreen';
+export { OrdoLogo } from './branding/OrdoLogo';
+
+// Camera Components
+export { CameraUI } from './camera/CameraUI';
+
+// Type Exports
 export type {
   DetectionVisualizationProps,
   BatchProgressProps,
   AnalysisResultsProps,
   PerformanceMetricsProps
 } from './EnhancedUIComponents';
-
-// Additional components will be exported here as they're created
-// export { Header } from './Header';
-// export { CameraView } from './CameraView';
-// export { LoadingSpinner } from './LoadingSpinner';
-// export { EmptyState } from './EmptyState';

@@ -1,43 +1,200 @@
-# Ordo - AI搭載ホーム管理アプリ
+# Ordo - AI Home Management App
 
-## 📱 プロジェクト概要
-Ordoは、AI画像認識技術を活用した革新的なホーム管理アプリケーションです。商品をカメラで撮影するだけで、自動的に商品情報を認識し、賞味期限管理や在庫管理を効率化します。
+A comprehensive home inventory management application powered by AI for smart product recognition, automated categorization, and intelligent expiry tracking.
 
-## 🚀 開発状況
+## � Project Overview
 
-### ✅ Phase 1-4: 基盤構築完了 (2024年)
-- **React Native CLI 0.81.0** - フレームワーク選定・環境構築
-- **TypeScript型システム** - 完全な型安全性実装  
-- **アーキテクチャ設計** - スケーラブルな設計パターン
-- **UIコンポーネント** - デザインシステム構築
-- **サービス層** - ビジネスロジック分離
-- **モックAI認識** - 開発用AI機能実装
+Ordo is an innovative mobile application designed to revolutionize home inventory management through advanced AI capabilities, intuitive user interfaces, and comprehensive automation features.
 
-### 🔄 Phase 5-8: 次期開発予定
-- **ナビゲーション実装** (React Navigation)
-- **カメラ機能統合** (Vision Camera)  
-- **データ永続化** (AsyncStorage)
-- **AI認識API連携** (Google Vision/OpenAI)
+### Core Features
 
-## 🛠️ 技術スタック
+- **AI-Powered Product Recognition**: Automatically identify and categorize products using advanced computer vision
+- **Smart Expiry Management**: Intelligent tracking and notifications for product expiration dates
+- **Barcode & QR Code Scanning**: Quick product addition through barcode scanning
+- **Voice Commands**: Multilingual voice interface for hands-free operation
+- **Cloud Synchronization**: Secure cloud storage and cross-device synchronization
+- **Smart Recommendations**: AI-driven product recommendations based on usage patterns
+- **Family Sharing**: Multi-user support with role-based access control
+- **Advanced Analytics**: Comprehensive usage analytics and insights
+- **Performance Optimization**: Enhanced app performance with intelligent caching
+- **Security Features**: Biometric authentication and data encryption
 
-### Frontend
-- **React Native CLI** - ネイティブ機能フルアクセス
-- **TypeScript** - 型安全な開発
-- **Custom Design System** - 一貫したUI/UX
+## 🏗 Technical Architecture
 
-### AI/ML
-- **Google Vision API** (計画) - 商品認識
-- **OpenAI Vision** (計画) - 代替AI認識
-- **Custom Training** (将来) - 日本食材特化モデル
+### Technology Stack
 
-### Storage & Backend  
-- **AsyncStorage** - ローカルデータ永続化
-- **Cloud Storage** (将来) - 画像・バックアップ
-- **REST API** (将来) - 商品データベース連携
+- **Frontend**: React Native 0.81 with TypeScript
+- **UI Framework**: React Native Paper with Material Design
+- **Navigation**: React Navigation v7
+- **Database**: SQLite with comprehensive data management
+- **Cloud Backend**: Firebase & AWS integration
+- **AI/ML**: TensorFlow.js, Advanced Computer Vision
+- **Voice Recognition**: Multi-language voice command support
+- **Testing**: Comprehensive test suite with Jest
 
-## 📂 プロジェクト構造
+### Project Structure
+
 ```
+OrdoApp/
+├── src/
+│   ├── components/          # Reusable UI components
+│   ├── screens/            # Screen components
+│   ├── services/          # Business logic and data access
+│   ├── navigation/        # Navigation configuration
+│   ├── types/            # TypeScript type definitions
+│   ├── constants/        # App constants and configurations
+│   └── utils/            # Utility functions and helpers
+├── __tests__/           # Test files and configurations
+├── docs/               # Technical documentation
+├── scripts/            # Build and utility scripts
+├── android/           # Android-specific code
+└── ios/              # iOS-specific code
+```
+
+## � Getting Started
+
+### Prerequisites
+
+- Node.js 18 or higher
+- React Native CLI
+- Android Studio (for Android development)
+- Xcode (for iOS development - macOS only)
+
+### Installation
+
+1. **Navigate to the app directory**
+   ```bash
+   cd OrdoApp
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **iOS Setup** (macOS only)
+   ```bash
+   cd ios && pod install && cd ..
+   ```
+
+4. **Start Metro bundler**
+   ```bash
+   npm start
+   ```
+
+5. **Run the application**
+   ```bash
+   # For Android
+   npm run android
+
+   # For iOS
+   npm run ios
+   ```
+
+## 🧪 Development Workflow
+
+### Available Scripts
+
+```bash
+# Development
+npm start                # Start Metro bundler
+npm run android         # Run on Android
+npm run ios             # Run on iOS
+npm run lint           # Lint code
+npm run type-check     # TypeScript type checking
+
+# Testing
+npm test              # Run all tests
+npm run test:watch    # Run tests in watch mode
+npm run test:coverage # Generate test coverage report
+
+# Building
+npm run build:android # Build Android APK
+npm run build:ios     # Build iOS app
+npm run clean         # Clean build cache
+```
+
+## 📱 Key Features
+
+### AI-Powered Recognition
+- Advanced object detection and classification
+- Multi-region extraction and analysis
+- Batch processing optimization
+- Freshness detection algorithms
+
+### Voice Interface
+- Multi-language voice commands
+- Natural language processing
+- Voice-guided navigation
+- Accessibility support
+
+### Cloud Integration
+- Firebase real-time synchronization
+- AWS cloud services
+- Conflict resolution
+- Offline-first architecture
+
+### Analytics & Insights
+- Usage analytics engine
+- Predictive algorithms
+- Learning data accumulation
+- Recommendation systems
+
+### Family & Sharing
+- Multi-user inventory management
+- Role-based access control
+- Shared shopping lists
+- Family notifications
+
+### Beta Testing
+- Comprehensive testing framework
+- User feedback collection
+- Usability testing tools
+- Performance monitoring
+
+## 🔧 Configuration
+
+The app includes comprehensive configuration for:
+
+- Multiple test environments
+- Performance optimization
+- Security settings
+- Cloud service integration
+- Voice recognition settings
+
+## 📊 Performance & Monitoring
+
+- Real-time performance monitoring
+- Memory optimization
+- Startup optimization
+- Background processing
+- Error tracking and reporting
+
+## 🔒 Security & Privacy
+
+- End-to-end data encryption
+- Secure authentication
+- Privacy-compliant data handling
+- Biometric security features
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if necessary
+5. Ensure all tests pass
+6. Submit a pull request
+
+## � License
+
+This project is licensed under the MIT License.
+
+---
+
+**Ordo** - Revolutionizing home inventory management through AI and intelligent automation.
+
+*Built with ❤️ using React Native and powered by cutting-edge AI technology.*
 OrdoApp/
 ├── src/
 │   ├── components/      # 再利用可能UIコンポーネント

@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@react-native-ml-kit/text-recognition": "^2.0.0",
-    "react-native-image-crop-picker": "^0.51.0"
-  }
-}

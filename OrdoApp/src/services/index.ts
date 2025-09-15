@@ -1,17 +1,14 @@
 /**
  * Ordo App - Services Index
  * Centralized export for all service modules
- * Phase 12 Complete - Advanced AI Analysis Platform
- * Phase 13 Complete - Database and Storage Implementation
- * Phase 14 Complete - Notification System
- * Phase 15 Complete - Error Monitoring & Logging System
- * Phase 16 Complete - Settings, Category Management & Data Export/Import
- * Phase 17 Complete - Security and Privacy Protection Implementation
  */
 
+// Core Services
 export { StorageService, ProductStorage } from './StorageService';
 export { sqliteService } from './sqliteService';
 export { cameraService, CameraService } from './CameraService';
+
+// Notification Services
 export { 
   NotificationService, 
   notificationService
@@ -21,8 +18,54 @@ export type {
   ScheduledNotification 
 } from './NotificationService';
 
-// Phase 12 - Advanced AI Services
+// AI Services
 export { ObjectDetectionService } from './ObjectDetectionService';
+export { MultiRegionExtractionService } from './MultiRegionExtractionService';
+export { BatchOptimizationService } from './BatchOptimizationService';
+export { FreshnessDetectionService } from './FreshnessDetectionService';
+
+// Performance Services
+export { startupOptimizer } from './StartupOptimizationService';
+export { performanceMonitor } from './PerformanceMonitorService';
+export { memoryOptimizer } from './MemoryOptimizationService';
+export { backgroundProcessor } from './BackgroundProcessingOptimizationService';
+
+// Voice Services
+export { voiceRecognitionService } from './VoiceRecognitionService';
+export { voiceCommandService } from './VoiceCommandAnalysisService';
+export { multilingualService } from './MultilingualExtensionService';
+
+// Analytics Services
+export { usageAnalyticsEngine } from './UsageAnalyticsEngine';
+export { predictiveAlgorithmService } from './PredictiveAlgorithmService';
+export { learningDataService } from './LearningDataAccumulationService';
+
+// Cloud Services
+export { firebaseService } from './FirebaseService';
+export { awsService } from './AWSService';
+export { authenticationService } from './AuthenticationService';
+export { synchronizationEngine } from './SynchronizationEngine';
+export { conflictResolutionService } from './ConflictResolutionService';
+export { cloudServiceManager } from './CloudServiceManager';
+
+// User Management
+export { userManagementService } from './UserManagementService';
+export { sharedInventoryService } from './SharedInventoryService';
+
+// Statistics & Reports
+export { statisticsEngineService } from './StatisticsEngineService';
+export { reportGenerationService } from './ReportGenerationService';
+export { exportService } from './ExportService';
+
+// Beta Testing Services
+export { betaTestEnvironmentService } from './BetaTestEnvironmentService';
+export { testFlightConfigurationService } from './TestFlightConfigurationService';
+export { usabilityTestingService } from './UsabilityTestingService';
+export { feedbackCollectionAnalysisService } from './FeedbackCollectionAnalysisService';
+export { improvementImplementationTrackingService } from './ImprovementImplementationTrackingService';
+export { betaTestingIntegrationService } from './BetaTestingIntegrationService';
+
+// Type exports
 export type { 
   DetectionResult,
   ObjectDetectionOutput,
@@ -30,7 +73,6 @@ export type {
   DetectionMetrics 
 } from './ObjectDetectionService';
 
-export { MultiRegionExtractionService } from './MultiRegionExtractionService';
 export type { 
   ExtractedRegion,
   MultiRegionOutput,
@@ -38,17 +80,13 @@ export type {
   RegionExtractionConfig 
 } from './MultiRegionExtractionService';
 
-export { BatchOptimizationService } from './BatchOptimizationService';
 export type { 
   BatchProgress,
   BatchOutput,
   BatchResult,
   BatchProcessingConfig,
   OptimizationMetrics 
-} from './BatchOptimizationService';
-
-export { FreshnessDetectionService } from './FreshnessDetectionService';
-export type { 
+} from './BatchOptimizationService'; 
   FreshnessScore
 } from './FreshnessDetectionService';
 

@@ -5,6 +5,15 @@
 
 import { Product, FreshnessLevel } from '../types';
 
+// Export specific utilities from separate files
+export { DebugUtils } from './DebugUtils';
+export { TestRunner } from './TestRunner';
+export { AcceptanceCriteriaValidator } from './AcceptanceCriteriaValidator';
+export { IntegrationTestSuite } from './IntegrationTestSuite';
+export { TensorFlowDemo } from './TensorFlowDemo';
+export { phase10ExtensionDemo } from './Phase10ExtensionDemo';
+export { phase11NewFeaturesDemo } from './Phase11NewFeaturesDemo';
+
 /**
  * Date utilities
  */
@@ -343,55 +352,25 @@ export const StorageUtils = {
 let timers: Record<string, number> = {};
 
 /**
- * Debug utilities
+ * Timer utilities for performance measurement
  */
-export const DebugUtils = {
-  /**
-   * Log with prefix
-   */
-  log(message: string, ...args: any[]): void {
-    if (__DEV__) {
-      console.log(`[Ordo] ${message}`, ...args);
-    }
-  },
-
-  /**
-   * Log error with prefix
-   */
-  error(message: string, error?: Error): void {
-    if (__DEV__) {
-      console.error(`[Ordo Error] ${message}`, error);
-    }
-  },
-
-  /**
-   * Log warning with prefix
-   */
-  warn(message: string, ...args: any[]): void {
-    if (__DEV__) {
-      console.warn(`[Ordo Warning] ${message}`, ...args);
-    }
-  },
-
+export const TimerUtils = {
   /**
    * Performance timer
    */
   time(label: string): void {
-    if (__DEV__) {
-      timers[label] = Date.now();
-    }
+    timers[label] = Date.now();
   },
 
   /**
    * End performance timer
    */
-  timeEnd(label: string): void {
-    if (__DEV__) {
-      if (timers[label]) {
-        const elapsed = Date.now() - timers[label];
-        console.log(`[Ordo] ${label}: ${elapsed}ms`);
-        delete timers[label];
-      }
+  timeEnd(label: string): number {
+    if (timers[label]) {
+      const elapsed = Date.now() - timers[label];
+      delete timers[label];
+      return elapsed;
     }
+    return 0;
   },
 };
